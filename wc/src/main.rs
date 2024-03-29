@@ -29,6 +29,7 @@ const BUF_LEN: usize = 1_024_000;
 fn main() -> Result<(), Box<dyn error::Error>> {
     let args: Vec<String> = env::args().collect();
     let options: Options;
+    let prefix_flag = args.len() > 1 && &args[1][..1] == "-";
 
     let mut reader_buffered: Box<dyn io::BufRead>;
     let stdin = io::stdin().lock();
@@ -39,7 +40,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             reader_buffered = Box::new(create_buffered_reader(BUF_LEN, stdin));
         }
         2 => {
-            if &args[1][..1] != "-" {
+            if !prefix_flag {
                 options = Options::All;
                 let file = &args[1];
                 reader_buffered = Box::new(create_buffered_reader(BUF_LEN, fs::File::open(file)?));
@@ -57,14 +58,14 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     }
 
     match process(&mut reader_buffered, options) {
-        Ok(_) => {}
+        Ok(_) => {},
         Err(e) => eprintln!("{}", e),
     }
 
-    if args.len() > 1 && &args[1][..1] != "-" {
-        println!(" {}", &args[args.len() - 1])
+    if !prefix_flag {
+        println!(" {}", &args[args.len() - 1]);
     } else {
-        println!()
+        println!();
     }
 
     Ok(())
@@ -104,19 +105,19 @@ fn process(
 
     match options {
         Options::All => {
-            print!("{:>8}{:>8}{:>8}{:>8}", lines, words, bytes, chars)
+            print!("{:>8}{:>8}{:>8}{:>8}", lines, words, bytes, chars);
         }
         Options::Lines => {
-            print!("{:>8}", lines)
+            print!("{:>8}", lines);
         }
         Options::Words => {
-            print!("{:>8}", words)
+            print!("{:>8}", words);
         }
         Options::Bytes => {
-            print!("{:>8}", bytes)
+            print!("{:>8}", bytes);
         }
         Options::Chars => {
-            print!("{:>8}", chars)
+            print!("{:>8}", chars);
         }
     }
 
