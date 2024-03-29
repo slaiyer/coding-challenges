@@ -59,21 +59,18 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 fs::File::open(file)?,
             ));
         }
-        _ => {
-            eprintln!("refer `man wc`");
-            std::process::exit(1);
-        }
+        _ => return Err(From::from("invalid arguments"))
     }
 
     match process(&mut reader_buffered, opts) {
         Ok(_) => {}
-        Err(e) => eprintln!("{}", e),
+        Err(e) => eprintln!("{}", e)
     }
 
     if args.len() > 1 && &args[1][..1] != "-" {
-        println!(" {}", &args[args.len() - 1]);
+        println!(" {}", &args[args.len() - 1])
     } else {
-        println!();
+        println!()
     }
 
     Ok(())
@@ -89,7 +86,7 @@ fn process(reader: &mut Box<dyn io::BufRead>, opts: Opts) -> Result<(), Box<dyn 
     loop {
         let n = reader.read(&mut buf)?;
         if n == 0 {
-            break;
+            break
         }
 
         let slice = std::str::from_utf8(&buf[..n])?;
@@ -102,35 +99,35 @@ fn process(reader: &mut Box<dyn io::BufRead>, opts: Opts) -> Result<(), Box<dyn 
                 chars += count_chars(slice);
             }
             Opts::Lines => {
-                lines += count_lines(slice);
+                lines += count_lines(slice)
             }
             Opts::Words => {
-                words += count_words(slice);
+                words += count_words(slice)
             }
             Opts::Bytes => {
-                bytes += n;
+                bytes += n
             }
             Opts::Chars => {
-                chars += count_chars(slice);
+                chars += count_chars(slice)
             }
         }
     }
 
     match opts {
         Opts::All => {
-            print!("{:>8}{:>8}{:>8}{:>8}", lines, words, bytes, chars);
+            print!("{:>8}{:>8}{:>8}{:>8}", lines, words, bytes, chars)
         }
         Opts::Lines => {
-            print!("{:>8}", lines);
+            print!("{:>8}", lines)
         }
         Opts::Words => {
-            print!("{:>8}", words);
+            print!("{:>8}", words)
         }
         Opts::Bytes => {
-            print!("{:>8}", bytes);
+            print!("{:>8}", bytes)
         }
         Opts::Chars => {
-            print!("{:>8}", chars);
+            print!("{:>8}", chars)
         }
     }
 
