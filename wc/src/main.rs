@@ -1,4 +1,5 @@
 use std::env;
+use std::error;
 use std::fs;
 use std::io;
 
@@ -25,7 +26,7 @@ impl Opts {
 // TODO: fix incorrect counts with smaller buffers; likely due to splitting multi-byte characters
 const BUF_LEN: usize = 1_024_000;
 
-fn main() {
+fn main() -> Result<(), Box<dyn error::Error>> {
     let args: Vec<String> = env::args().collect();
     let opts: Opts;
 
@@ -43,7 +44,7 @@ fn main() {
                 let file = &args[1];
                 reader_buffered = Box::new(create_buffered_reader(
                     BUF_LEN,
-                    fs::File::open(file).unwrap(),
+                    fs::File::open(file)?,
                 ));
             } else {
                 opts = Opts::from_str(&args[1][1..]);
@@ -55,7 +56,7 @@ fn main() {
             let file = &args[2];
             reader_buffered = Box::new(create_buffered_reader(
                 BUF_LEN,
-                fs::File::open(file).unwrap(),
+                fs::File::open(file)?,
             ));
         }
         _ => {
@@ -64,15 +65,21 @@ fn main() {
         }
     }
 
-    process(&mut reader_buffered, opts);
+    match process(&mut reader_buffered, opts) {
+        Ok(_) => {}
+        Err(e) => eprintln!("{}", e),
+    }
+
     if args.len() > 1 && &args[1][..1] != "-" {
         println!(" {}", &args[args.len() - 1]);
     } else {
         println!();
     }
+
+    Ok(())
 }
 
-fn process(reader: &mut Box<dyn io::BufRead>, opts: Opts) {
+fn process(reader: &mut Box<dyn io::BufRead>, opts: Opts) -> Result<(), Box<dyn error::Error>> {
     let mut lines = 0;
     let mut words = 0;
     let mut bytes = 0;
@@ -80,12 +87,12 @@ fn process(reader: &mut Box<dyn io::BufRead>, opts: Opts) {
 
     let mut buf = [0; BUF_LEN];
     loop {
-        let n = reader.read(&mut buf).unwrap();
+        let n = reader.read(&mut buf)?;
         if n == 0 {
             break;
         }
 
-        let slice = std::str::from_utf8(&buf[..n]).unwrap();
+        let slice = std::str::from_utf8(&buf[..n])?;
 
         match opts {
             Opts::All => {
@@ -126,6 +133,8 @@ fn process(reader: &mut Box<dyn io::BufRead>, opts: Opts) {
             print!("{:>8}", chars);
         }
     }
+
+    Ok(())
 }
 
 fn count_lines(slice: &str) -> usize {
