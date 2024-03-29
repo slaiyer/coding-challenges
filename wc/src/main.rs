@@ -38,22 +38,22 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         1 => {
             options = Options::All;
             reader_buffered = Box::new(create_buffered_reader(BUF_LEN, stdin));
-        }
+        },
         2 => {
-            if !prefix_flag {
+            if prefix_flag {
+                options = Options::All;
+                reader_buffered = Box::new(create_buffered_reader(BUF_LEN, stdin));
+            } else {
                 options = Options::All;
                 let file = &args[1];
                 reader_buffered = Box::new(create_buffered_reader(BUF_LEN, fs::File::open(file)?));
-            } else {
-                options = Options::from_str(&args[1][1..]);
-                reader_buffered = Box::new(create_buffered_reader(BUF_LEN, stdin));
             }
-        }
+        },
         3 => {
             options = Options::from_str(&args[1][1..]);
             let file = &args[2];
             reader_buffered = Box::new(create_buffered_reader(BUF_LEN, fs::File::open(file)?));
-        }
+        },
         _ => return Err(From::from("invalid arguments")),
     }
 
@@ -62,10 +62,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         Err(e) => eprintln!("{}", e),
     }
 
-    if !prefix_flag {
-        println!(" {}", &args[args.len() - 1]);
+    if (args.len() == 2 && !prefix_flag) || args.len() == 3 {
+        println!(" {}", &args[args.len() - 1])
     } else {
-        println!();
+        println!()
     }
 
     Ok(())
