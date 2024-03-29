@@ -63,9 +63,9 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     }
 
     if (args.len() == 2 && !prefix_flag) || args.len() == 3 {
-        println!(" {}", &args[args.len() - 1])
+        println!(" {}", &args[args.len() - 1]);
     } else {
-        println!()
+        println!();
     }
 
     Ok(())
@@ -106,19 +106,19 @@ fn process(
     match options {
         Options::All => {
             print!("{:>8}{:>8}{:>8}{:>8}", lines, words, bytes, chars);
-        }
+        },
         Options::Lines => {
             print!("{:>8}", lines);
-        }
+        },
         Options::Words => {
             print!("{:>8}", words);
-        }
+        },
         Options::Bytes => {
             print!("{:>8}", bytes);
-        }
+        },
         Options::Chars => {
             print!("{:>8}", chars);
-        }
+        },
     }
 
     Ok(())
