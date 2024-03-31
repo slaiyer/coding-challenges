@@ -18,4 +18,13 @@ fn main() {
     println!("{}", serde::serialize(serde::Response::SimpleString("OK".into())));
     println!("{}", serde::serialize(serde::Response::Array(vec!["get".into(), "key".into()])));
     println!("{}", serde::serialize(serde::Response::Error("Error message".into())));
+
+    println!("{:?}", serde::serialize(serde::Response::Null));
+    println!("{:?}", serde::serialize(serde::Response::Array(["ping".into()].into())));
+    println!("{:?}", serde::serialize(serde::Response::Integer(666)));
+    println!("{:?}", serde::serialize(serde::Response::Integer(-1000)));
+    println!("{:?}", serde::serialize(serde::Response::Array(["echo".into(), "hello world".into()].into())));
+    println!("{:?}", serde::serialize(serde::Response::SimpleString("OK".into())));
+    println!("{:?}", serde::serialize(serde::Response::Array(vec!["get".into(), "key".into()])));
+    println!("{:?}", serde::serialize(serde::Response::Error("Error message".into())));
 }
