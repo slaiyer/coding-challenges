@@ -3,7 +3,7 @@ use std::{error::Error, fmt};
 fn main() {}
 
 #[derive(Debug, PartialEq)]
-pub enum DeserializeError {
+enum DeserializeError {
     UnexpectedFirstByte,
 }
 
