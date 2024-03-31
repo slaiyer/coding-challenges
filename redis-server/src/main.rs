@@ -45,7 +45,7 @@ fn deserialize(s: &str) -> Result<Response, Box<dyn Error>> {
                     let len_str = line[1..].parse::<usize>()?;
                     line = match lines.next() {
                         Some(l) => l,
-                        None => return Err("no further lines".into()),
+                        None => return Err("no further lines in bulk string".into()),
                     };
                     Ok(Response::BulkString(line[..len_str].to_string()))
                 }
@@ -57,7 +57,7 @@ fn deserialize(s: &str) -> Result<Response, Box<dyn Error>> {
             for _ in 0..num_elem {
                 line = match lines.next() {
                     Some(l) => l,
-                    None => return Err("no further lines".into()),
+                    None => return Err("no further lines in array for element length".into()),
                 };
                 let len_first_byte = &line[..1];
                 if len_first_byte != "$" {
@@ -66,7 +66,7 @@ fn deserialize(s: &str) -> Result<Response, Box<dyn Error>> {
                 let len = line[1..].parse::<usize>()?;
                 line = match lines.next() {
                     Some(l) => l,
-                    None => return Err("no further lines".into()),
+                    None => return Err("no further lines in array for element".into()),
                 };
                 buf.push(line[..len].to_string());
             }
