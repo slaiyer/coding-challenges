@@ -29,33 +29,45 @@ enum Response {
 
 fn deserialize(s: &str) -> Result<Response, Box<dyn Error>> {
     let mut lines = s.lines();
-    let mut line = lines.next().unwrap();
-    match line.chars().next().unwrap() {
-        '+' => Ok(Response::SimpleString(line[1..].to_string())),
-        '-' => Ok(Response::Error(line[1..].to_string())),
-        ':' => Ok(Response::Integer(line[1..].parse()?)),
-        '$' => {
+    let mut line = match lines.next() {
+        Some(l) => l,
+        None => return Err("no lines".into()),
+    };
+    match line.chars().next() {
+        Some('+') => Ok(Response::SimpleString(line[1..].to_string())),
+        Some('-') => Ok(Response::Error(line[1..].to_string())),
+        Some(':') => Ok(Response::Integer(line[1..].parse()?)),
+        Some('$') => {
             let num_elem = line[1..].parse()?;
             match num_elem {
                 -1 => Ok(Response::Null),
                 _ => {
                     let len_str = line[1..].parse::<usize>()?;
-                    line = lines.next().unwrap();
+                    line = match lines.next() {
+                        Some(l) => l,
+                        None => return Err("no further lines".into()),
+                    };
                     Ok(Response::BulkString(line[..len_str].to_string()))
                 }
             }
         }
-        '*' => {
+        Some('*') => {
             let num_elem = line[1..].parse::<usize>()?;
             let mut buf = Vec::<String>::new();
             for _ in 0..num_elem {
-                line = lines.next().unwrap();
+                line = match lines.next() {
+                    Some(l) => l,
+                    None => return Err("no further lines".into()),
+                };
                 let len_first_byte = &line[..1];
                 if len_first_byte != "$" {
                     return Err(format!("invalid first byte ({}) for array element length", {len_first_byte}).into());
                 };
                 let len = line[1..].parse::<usize>()?;
-                line = lines.next().unwrap();
+                line = match lines.next() {
+                    Some(l) => l,
+                    None => return Err("no further lines".into()),
+                };
                 buf.push(line[..len].to_string());
             }
             Ok(Response::Array(buf))
