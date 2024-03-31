@@ -1,6 +1,6 @@
 use std::{cmp::Reverse, collections::{BinaryHeap, HashMap}};
 
-trait HuffmanBaseNode: PartialEq + PartialOrd {
+trait HuffmanBaseNode: Eq + PartialEq + PartialOrd {
     fn is_leaf(&self) -> bool;
     fn weight(&self) -> u32;
 }
