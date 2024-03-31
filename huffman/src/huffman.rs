@@ -165,3 +165,28 @@ fn build_code_lookup_recursive(
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_code_lookup() {
+        let mut freq_map = HashMap::new();
+        freq_map.insert('a', 4);
+        freq_map.insert('b', 4);
+        freq_map.insert('c', 2);
+        freq_map.insert('d', 2);
+        freq_map.insert('e', 3);
+        freq_map.insert('f', 1);
+
+        let code_lookup = build_code_lookup(&freq_map);
+
+        assert_eq!(code_lookup.get(&'a').unwrap(), "01");
+        assert_eq!(code_lookup.get(&'b').unwrap(), "10");
+        assert_eq!(code_lookup.get(&'c').unwrap(), "001");
+        assert_eq!(code_lookup.get(&'d').unwrap(), "110");
+        assert_eq!(code_lookup.get(&'e').unwrap(), "111");
+        assert_eq!(code_lookup.get(&'f').unwrap(), "000");
+    }
+}
