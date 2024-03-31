@@ -205,4 +205,34 @@ mod tests {
 
         assert_eq!(create_freq_map(&data), expected);
     }
+
+    #[test]
+    fn test_string_to_bits() {
+        let s = "01100100101010010101000001";
+        let expected = vec![0b01100100, 0b10101001, 0b01010000, 0b01000000];
+        assert_eq!(string_to_bits(&s), expected);
+    }
+
+    #[test]
+    fn test_bits_to_string() {
+        let bytes = vec![0b01100100, 0b10101001, 0b01010000, 0b01000000];
+        let len = 25;
+        let expected = "0110010010101001010100000";
+        assert_eq!(bits_to_string(&bytes, len), expected);
+    }
+
+    #[test]
+    fn test_get_coded_data() {
+        let data = "hello";
+        let code_lookup = {
+            let mut code_lookup = HashMap::new();
+            code_lookup.insert('h', "00".to_string());
+            code_lookup.insert('e', "01".to_string());
+            code_lookup.insert('l', "10".to_string());
+            code_lookup.insert('o', "11".to_string());
+            code_lookup
+        };
+        let expected = vec![0b00011010, 0b11000000];
+        assert_eq!(get_coded_data(&data, &code_lookup), expected);
+    }
 }
