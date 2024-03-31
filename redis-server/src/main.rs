@@ -1,5 +1,7 @@
 use std::{error::Error, fmt};
 
+const TERM: &str = "\r\n";
+
 fn main() {}
 
 #[derive(Debug, PartialEq)]
@@ -61,7 +63,12 @@ fn deserialize(s: &str) -> Result<Response, Box<dyn Error>> {
                 };
                 let len_first_byte = &line[..1];
                 if len_first_byte != "$" {
-                    return Err(format!("invalid first byte ({}) for array element length", {len_first_byte}).into());
+                    return Err(
+                        format!("invalid first byte ({}) for array element length", {
+                            len_first_byte
+                        })
+                        .into(),
+                    );
                 };
                 let len = line[1..].parse::<usize>()?;
                 line = match lines.next() {
@@ -76,87 +83,104 @@ fn deserialize(s: &str) -> Result<Response, Box<dyn Error>> {
     }
 }
 
+fn serialize(r: Response) -> String {
+    match r {
+        Response::SimpleString(s) => format!("+{}{TERM}", s),
+        Response::Error(s) => format!("-{}{TERM}", s),
+        Response::Integer(i) => format!(":{}{TERM}", i),
+        Response::BulkString(s) => format!("${}{TERM}{}{TERM}", s.len(), s),
+        Response::Null => format!("$-1{TERM}").to_string(),
+        Response::Array(v) => format!(
+            "*{}{TERM}{}",
+            v.len(),
+            v.iter()
+                .map(|s| format!("${}{TERM}{}{TERM}", s.len(), s))
+                .collect::<Vec<String>>()
+                .concat()
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test_deserialize_null_bulk_string() {
-        let s = "$-1\r\n";
-        assert_eq!(deserialize(s).unwrap(), Response::Null,);
+        let a = "$-1\r\n";
+        let b = Response::Null;
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_array_ping() {
-        let s = "*1\r\n$4\r\nping\r\n";
-        assert_eq!(
-            deserialize(s).unwrap(),
-            Response::Array(["ping".to_string(),].to_vec()),
-        );
+        let a = "*1\r\n$4\r\nping\r\n";
+        let b = Response::Array(["ping".to_string()].to_vec());
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_integer_666() {
-        let s = ":666\r\n";
-        assert_eq!(deserialize(s).unwrap(), Response::Integer(666),);
+        let a = ":666\r\n";
+        let b = Response::Integer(666);
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_integer_minus_1000() {
-        let s = ":-1000\r\n";
-        assert_eq!(deserialize(s).unwrap(), Response::Integer(-1000),);
+        let a = ":-1000\r\n";
+        let b = Response::Integer(-1000);
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_array_echo_hello_world() {
-        let s = "*2\r\n$4\r\necho\r\n$11\r\nhello world\r\n";
-        assert_eq!(
-            deserialize(s).unwrap(),
-            Response::Array(["echo".to_string(), "hello world".to_string(),].to_vec()),
-        );
+        let a = "*2\r\n$4\r\necho\r\n$11\r\nhello world\r\n";
+        let b = Response::Array(["echo".to_string(), "hello world".to_string()].to_vec());
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_array_get_key() {
-        let s = "*2\r\n$3\r\nget\r\n$3\r\nkey\r\n";
-        assert_eq!(
-            deserialize(s).unwrap(),
-            Response::Array(["get".to_string(), "key".to_string(),].to_vec()),
-        );
+        let a = "*2\r\n$3\r\nget\r\n$3\r\nkey\r\n";
+        let b = Response::Array(["get".to_string(), "key".to_string()].to_vec());
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_simple_string_ok() {
-        let s = "+OK\r\n";
-        assert_eq!(
-            deserialize(s).unwrap(),
-            Response::SimpleString("OK".to_string()),
-        );
+        let a = "+OK\r\n";
+        let b = Response::SimpleString("OK".to_string());
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_error_message() {
-        let s = "-Error message\r\n";
-        assert_eq!(
-            deserialize(s).unwrap(),
-            Response::Error("Error message".to_string()),
-        );
+        let a = "-Error message\r\n";
+        let b = Response::Error("Error message".to_string());
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_empty_bulk_string() {
-        let s = "$0\r\n\r\n";
-        assert_eq!(
-            deserialize(s).unwrap(),
-            Response::BulkString("".to_string()),
-        );
+        let a = "$0\r\n\r\n";
+        let b = Response::BulkString("".to_string());
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 
     #[test]
     fn test_deserialize_simple_string_hello_world() {
-        let s = "+hello world\r\n";
-        assert_eq!(
-            deserialize(s).unwrap(),
-            Response::SimpleString("hello world".to_string()),
-        );
+        let a = "+hello world\r\n";
+        let b = Response::SimpleString("hello world".to_string());
+        assert_eq!(deserialize(a).unwrap(), b);
+        assert_eq!(serialize(b), a);
     }
 }
