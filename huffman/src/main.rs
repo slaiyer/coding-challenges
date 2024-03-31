@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .read_to_end(&mut data_in)
                 .expect("unable to read file");
 
-            data_out = decompress(data_in);
+            data_out = decompress(&data_in);
         }
     }
 
@@ -62,8 +62,8 @@ fn compress(data: &str) -> Vec<u8> {
     let code_lookup = huffman::build_code_lookup(&freq_map);
 
     let mut compressed = Vec::<u8>::new();
-    compressed.extend_from_slice(&get_header(&code_lookup));
-    compressed.extend_from_slice(&get_coded_data(data, &code_lookup));
+    compressed.extend_from_slice(&serialize_code_lookup(&code_lookup));
+    compressed.extend_from_slice(&encode_data(data, &code_lookup));
 
     compressed
 }
@@ -78,7 +78,7 @@ fn create_freq_map(data: &str) -> HashMap<char, u32> {
     freq_map
 }
 
-fn get_header(code_lookup: &HashMap<char, String>) -> Vec<u8> {
+fn serialize_code_lookup(code_lookup: &HashMap<char, String>) -> Vec<u8> {
     let mut header = Vec::<u8>::new();
     let code_lookup_len = code_lookup.len() as u32;
     header.extend_from_slice(&code_lookup_len.to_le_bytes());
@@ -115,7 +115,7 @@ fn string_to_bits(s: &str) -> Vec<u8> {
     bits
 }
 
-fn get_coded_data(data: &str, code_lookup: &HashMap<char, String>) -> Vec<u8> {
+fn encode_data(data: &str, code_lookup: &HashMap<char, String>) -> Vec<u8> {
     let mut coded_data = Vec::<u8>::new();
     let mut code = String::new();
 
@@ -138,33 +138,51 @@ fn get_coded_data(data: &str, code_lookup: &HashMap<char, String>) -> Vec<u8> {
     coded_data
 }
 
-fn decompress(mut data: Vec<u8>) -> Vec<u8> {
-    let code_lookup_len = u32::from_le_bytes(data[..4].try_into().unwrap());
+fn decompress(data: &Vec<u8>) -> Vec<u8> {
+    let mut data = data.clone();
+
+    let code_lookup = parse_code_lookup(&mut data);
+    let code = bits_to_string(&data, data.len() * 8);
+    let decoded_data = decode_data(code, code_lookup);
+
+    decoded_data.as_bytes().to_vec()
+}
+
+fn parse_code_lookup(data: &mut Vec<u8>) -> HashMap<char, String> {
+    let code_lookup_len = u32::from_le_bytes(data[..4].to_vec().try_into().unwrap());
     data.drain(0..4);
 
     let mut code_lookup = HashMap::new();
     for _ in 0..code_lookup_len {
-        let c_bytes_len = u32::from_le_bytes(data[..4].try_into().unwrap()) as usize;
+        let c_bytes_len = u32::from_le_bytes(data[..4].to_vec().try_into().unwrap()) as usize;
         data.drain(0..4);
-        let c_bytes = &data[..c_bytes_len];
-        let c = std::str::from_utf8(c_bytes).unwrap().chars().next().unwrap();
+        let c_bytes = data[..c_bytes_len].to_vec();
+        let c = std::str::from_utf8(&c_bytes).unwrap().chars().next().unwrap();
         data.drain(0..c_bytes_len);
 
         let code_bits_len = u32::from_le_bytes(data[..4].try_into().unwrap()) as usize;
         data.drain(0..4);
         let code_bytes_len = (code_bits_len + 7) / 8;
-        let code_bits = &data[..code_bytes_len];
-        let code = bits_to_string(code_bits, code_bits_len);
+        let code_bits = data[..code_bytes_len].to_vec();
+        let code = bits_to_string(&code_bits, code_bits_len);
         data.drain(0..code_bytes_len);
 
         code_lookup.insert(c, code);
     }
 
+    code_lookup
+}
+
+fn bits_to_string(bytes: &[u8], len: usize) -> String {
     let mut code = String::new();
-    for byte in data {
+    for byte in bytes {
         code.push_str(&format!("{:08b}", byte));
     }
 
+    code[..len].to_string()
+}
+
+fn decode_data(code: String, code_lookup: HashMap<char, String>) -> String {
     let mut decoded_data = String::new();
     let mut i = 0;
     while i < code.len() {
@@ -177,17 +195,7 @@ fn decompress(mut data: Vec<u8>) -> Vec<u8> {
         decoded_data.push(*c);
         i = j;
     }
-
-    decoded_data.as_bytes().to_vec()
-}
-
-fn bits_to_string(bytes: &[u8], len: usize) -> String {
-    let mut code = String::new();
-    for byte in bytes {
-        code.push_str(&format!("{:08b}", byte));
-    }
-
-    code[..len].to_string()
+    decoded_data
 }
 
 #[cfg(test)]
@@ -222,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_coded_data() {
+    fn test_encode_data() {
         let data = "hello";
         let code_lookup = {
             let mut code_lookup = HashMap::new();
@@ -233,6 +241,21 @@ mod tests {
             code_lookup
         };
         let expected = vec![0b00011010, 0b11000000];
-        assert_eq!(get_coded_data(&data, &code_lookup), expected);
+        assert_eq!(encode_data(&data, &code_lookup), expected);
+    }
+
+    #[test]
+    fn test_decode_data() {
+        let code = "0001101011".to_string();
+        let code_lookup = {
+            let mut code_lookup = HashMap::new();
+            code_lookup.insert('h', "00".to_string());
+            code_lookup.insert('e', "01".to_string());
+            code_lookup.insert('l', "10".to_string());
+            code_lookup.insert('o', "11".to_string());
+            code_lookup
+        };
+        let expected = "hello";
+        assert_eq!(decode_data(code, code_lookup), expected);
     }
 }
