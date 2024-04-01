@@ -1,30 +1,66 @@
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
+
 mod serde;
+use serde::{TERM, deserialize, serialize, Error, Request, Response};
 
 fn main() {
-    println!("{}", serde::deserialize("$-1\r\n").unwrap());
-    println!("{}", serde::deserialize("*1\r\n$4\r\nping\r\n").unwrap());
-    println!("{}", serde::deserialize(":666\r\n").unwrap());
-    println!("{}", serde::deserialize(":-1000\r\n").unwrap());
-    println!("{}", serde::deserialize("*2\r\n$4\r\necho\r\n$11\r\nhello world\r\n").unwrap());
-    println!("{}", serde::deserialize("*2\r\n$3\r\nget\r\n$3\r\nkey\r\n").unwrap());
-    println!("{}", serde::deserialize("+OK\r\n").unwrap());
-    println!("{}", serde::deserialize("-Error message\r\n").unwrap());
+    let listener = TcpListener::bind("127.0.0.1:6379").expect("failed to bind to port 6379");
 
-    println!("{}", serde::serialize(serde::Response::Null));
-    println!("{}", serde::serialize(serde::Response::Array(["ping".into()].into())));
-    println!("{}", serde::serialize(serde::Response::Integer(666)));
-    println!("{}", serde::serialize(serde::Response::Integer(-1000)));
-    println!("{}", serde::serialize(serde::Response::Array(["echo".into(), "hello world".into()].into())));
-    println!("{}", serde::serialize(serde::Response::SimpleString("OK".into())));
-    println!("{}", serde::serialize(serde::Response::Array(vec!["get".into(), "key".into()])));
-    println!("{}", serde::serialize(serde::Response::Error("Error message".into())));
+    for stream in listener.incoming() {
+        match stream {
+            Ok(mut stream) => {
+                handle_client(&mut stream);
+            }
+            Err(e) => {
+                eprintln!("Error: {}", e);
+            }
+        }
+    }
+}
 
-    println!("{:?}", serde::serialize(serde::Response::Null));
-    println!("{:?}", serde::serialize(serde::Response::Array(["ping".into()].into())));
-    println!("{:?}", serde::serialize(serde::Response::Integer(666)));
-    println!("{:?}", serde::serialize(serde::Response::Integer(-1000)));
-    println!("{:?}", serde::serialize(serde::Response::Array(["echo".into(), "hello world".into()].into())));
-    println!("{:?}", serde::serialize(serde::Response::SimpleString("OK".into())));
-    println!("{:?}", serde::serialize(serde::Response::Array(vec!["get".into(), "key".into()])));
-    println!("{:?}", serde::serialize(serde::Response::Error("Error message".into())));
+fn handle_client(stream: &mut TcpStream) {
+    let mut buffer = [0; 1024];
+    stream
+        .read(&mut buffer)
+        .expect("failed to read from stream");
+
+    // Process the request and send the response
+    let response = process_request(&buffer);
+    stream
+        .write_all(response.as_bytes())
+        .expect("failed to write to stream");
+}
+
+fn process_request(request: &[u8]) -> String {
+    let request_str = match String::from_utf8(request.to_vec()) {
+        Ok(r) => r,
+        Err(_) => return serialize(Response::Error(Error::new_generic("invalid request"))),
+    };
+
+    let request = match deserialize(&request_str) {
+        Ok(r) => r,
+        Err(e) => return serialize(Response::Error(Error::new_generic(e.to_string().as_str()))),
+    };
+
+    handle_command(request)
+}
+
+fn handle_command(request: Request) -> String {
+    match request {
+        Request::InlineCommand(c) => match c.execute() {
+            Ok(response) => response,
+            Err(error) => error,
+        },
+        Request::Array(commands) => {
+            let mut responses = Vec::<String>::new();
+            for c in commands {
+                match c.execute() {
+                    Ok(response) => responses.push(response),
+                    Err(error) => responses.push(error),
+                }
+            }
+            responses.join(TERM)
+        }
+    }
 }
