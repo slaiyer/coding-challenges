@@ -4,6 +4,10 @@ use std::net::{TcpListener, TcpStream};
 mod serde;
 use serde::{TERM, deserialize, serialize, Error, Request, Response};
 
+mod command;
+
+mod kvstore;
+
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:6379").expect("failed to bind to port 6379");
 
@@ -21,15 +25,22 @@ fn main() {
 
 fn handle_client(stream: &mut TcpStream) {
     let mut buffer = [0; 1024];
-    stream
-        .read(&mut buffer)
-        .expect("failed to read from stream");
-
-    // Process the request and send the response
-    let response = process_request(&buffer);
-    stream
-        .write_all(response.as_bytes())
-        .expect("failed to write to stream");
+    loop {
+        match stream.read(&mut buffer) {
+            Ok(_) => {
+                // Process the request and send the response
+                let response = process_request(&buffer);
+                if let Err(e) = stream.write_all(response.as_bytes()) {
+                    eprintln!("Failed to write to stream: {}", e);
+                    break;
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to read from stream: {}", e);
+                break;
+            }
+        }
+    }
 }
 
 fn process_request(request: &[u8]) -> String {

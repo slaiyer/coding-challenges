@@ -1,6 +1,36 @@
-use std::{error, fmt, str::FromStr};
+use std::fmt;
+
+use crate::command::{Command, InvalidCommandError};
 
 pub const TERM: &str = "\r\n";
+
+#[derive(Debug, PartialEq)]
+pub enum Request {
+    Array(Vec<Command>),
+    InlineCommand(Command),
+}
+
+impl fmt::Display for Response {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Response::SimpleString(ref s) => write!(f, "+{}{T}", s, T = TERM),
+            Response::Error(ref s) => s.fmt(f),
+            Response::Integer(i) => write!(f, ":{}{T}", i, T = TERM),
+            Response::BulkString(ref s) => write!(f, "${}{T}{}{T}", s.len(), s, T = TERM),
+            Response::Null => write!(f, "$-1{T}", T = TERM),
+            Response::Array(ref v) => write!(
+                f,
+                "*{}{T}{}",
+                v.len(),
+                v.iter()
+                    .map(|s| format!("${}{T}{}{T}", s.len(), s, T = TERM))
+                    .collect::<Vec<String>>()
+                    .concat(),
+                T = TERM,
+            ),
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Error {
@@ -44,106 +74,6 @@ pub enum Response {
     Array(Vec<String>),
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Command {
-    command: CommandType,
-    args: Vec<String>,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum InvalidCommandError {
-    InvalidCommand,
-    NoCommands,
-    InvalidBulkStringLength,
-    InvalidCommandLength,
-    MissingCommand,
-}
-
-impl fmt::Display for InvalidCommandError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            InvalidCommandError::InvalidCommand => write!(f, "invalid command"),
-            InvalidCommandError::NoCommands => write!(f, "no commands"),
-            InvalidCommandError::InvalidBulkStringLength => write!(f, "invalid bulk string length"),
-            InvalidCommandError::InvalidCommandLength => write!(f, "invalid command length"),
-            InvalidCommandError::MissingCommand => write!(f, "missing command"),
-        }
-    }
-}
-
-impl FromStr for CommandType {
-    type Err = InvalidCommandError;
-
-    fn from_str(s: &str) -> Result<Self, InvalidCommandError> {
-        match s.to_uppercase().as_str() {
-            "PING" => Ok(Self::Ping),
-            "ECHO" => Ok(Self::Echo),
-            "GET" => Ok(Self::Get),
-            _ => Err(InvalidCommandError::InvalidCommand),
-        }
-    }
-}
-
-impl Command {
-    fn new(s: &str) -> Result<Self, InvalidCommandError> {
-        let mut parts = s.split_whitespace();
-        let command = CommandType::from_str(parts.next().unwrap_or_default())?;
-
-        Ok(Self {
-            command,
-            args: parts.map(|s| s.into()).collect(),
-        })
-    }
-
-    pub fn execute(&self) -> Result<String, String> {
-        match self.command {
-            CommandType::Ping => match self.args.len() {
-                0 => Ok(serialize(Response::SimpleString("PONG".into()))),
-                _ => Ok(serialize(Response::SimpleString(self.args.join(" ")))),
-            },
-            CommandType::Echo => Ok(serialize(Response::SimpleString(self.args.join(" ")))),
-            CommandType::Get => Err(serialize(Response::Error(Error::new_generic(
-                "GET not implemented",
-            )))),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum CommandType {
-    Ping,
-    Echo,
-    Get,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Request {
-    Array(Vec<Command>),
-    InlineCommand(Command),
-}
-
-impl fmt::Display for Response {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Response::SimpleString(ref s) => write!(f, "+{}{T}", s, T = TERM),
-            Response::Error(ref s) => s.fmt(f),
-            Response::Integer(i) => write!(f, ":{}{T}", i, T = TERM),
-            Response::BulkString(ref s) => write!(f, "${}{T}{}{T}", s.len(), s, T = TERM),
-            Response::Null => write!(f, "$-1{T}", T = TERM),
-            Response::Array(ref v) => write!(
-                f,
-                "*{}{T}{}",
-                v.len(),
-                v.iter()
-                    .map(|s| format!("${}{T}{}{T}", s.len(), s, T = TERM))
-                    .collect::<Vec<String>>()
-                    .concat(),
-                T = TERM,
-            ),
-        }
-    }
-}
-
 pub fn deserialize(s: &str) -> Result<Request, InvalidCommandError> {
     let mut lines = s.lines();
     let line = match lines.next() {
@@ -158,7 +88,7 @@ pub fn deserialize(s: &str) -> Result<Request, InvalidCommandError> {
             };
             parse_bulk_string(num_lines, lines)
         }
-        _ => Command::new(line).map(Request::InlineCommand),
+        _ => Command::new_from_str(line).map(Request::InlineCommand),
     }
 }
 
@@ -186,7 +116,7 @@ fn parse_bulk_string(
             Some(l) => l,
             None => return Err(InvalidCommandError::MissingCommand),
         };
-        let command = match Command::new(&line[..len]) {
+        let command = match Command::new_from_str(&line[..len]) {
             Ok(c) => c,
             Err(_) => return Err(InvalidCommandError::InvalidCommand),
         };
@@ -202,6 +132,8 @@ pub fn serialize(r: Response) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::command::CommandType;
+
     #[test]
     fn test_deserialize_null_bulk_string() {
         let a = Response::Null;
@@ -275,50 +207,35 @@ mod tests {
     #[test]
     fn test_deserialize_inline_ping() {
         let a = "ping\r\n";
-        let b = Request::InlineCommand(Command {
-            command: CommandType::Ping,
-            args: vec![],
-        });
+        let b = Request::InlineCommand(Command::new(CommandType::Ping, vec![]));
         assert_eq!(deserialize(a).unwrap(), b);
     }
 
     #[test]
     fn test_deserialize_inline_ping_message() {
         let a = "ping ling\r\n";
-        let b = Request::InlineCommand(Command {
-            command: CommandType::Ping,
-            args: vec!["ling".into()],
-        });
+        let b = Request::InlineCommand(Command::new(CommandType::Ping, vec!["ling".into()]));
         assert_eq!(deserialize(a).unwrap(), b);
     }
 
     #[test]
     fn test_deserialize_inline_echo() {
         let a = "echo\r\n";
-        let b = Request::InlineCommand(Command {
-            command: CommandType::Echo,
-            args: vec![],
-        });
+        let b = Request::InlineCommand(Command::new(CommandType::Echo, vec![]));
         assert_eq!(deserialize(a).unwrap(), b);
     }
 
     #[test]
     fn test_deserialize_inline_echo_message() {
         let a = "echo checo\r\n";
-        let b = Request::InlineCommand(Command {
-            command: CommandType::Echo,
-            args: vec!["checo".into()],
-        });
+        let b = Request::InlineCommand(Command::new(CommandType::Echo, vec!["checo".into()]));
         assert_eq!(deserialize(a).unwrap(), b);
     }
 
     #[test]
     fn test_deserialize_inline_get() {
         let a = "get foo\r\n";
-        let b = Request::InlineCommand(Command {
-            command: CommandType::Get,
-            args: vec!["foo".into()],
-        });
+        let b = Request::InlineCommand(Command::new(CommandType::Get, vec!["foo".into()]));
         assert_eq!(deserialize(a).unwrap(), b);
     }
 }
