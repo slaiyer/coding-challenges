@@ -1,5 +1,5 @@
 use dashmap::DashMap;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 
 pub struct KvStore {
     store: DashMap<String, String>,
@@ -29,6 +29,4 @@ impl KvStore {
     }
 }
 
-lazy_static! {
-    pub static ref KV_STORE: KvStore = KvStore::new();
-}
+pub static KV_STORE: Lazy<KvStore> = Lazy::new(KvStore::new);
