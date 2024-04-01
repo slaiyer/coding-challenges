@@ -12,6 +12,10 @@ impl KvStore {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.store.len()
+    }
+
     pub fn exists(&self, key: String) -> bool {
         self.store.contains_key(&key)
     }

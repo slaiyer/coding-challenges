@@ -1,5 +1,6 @@
 #![warn(unused_extern_crates)]
 
+use kvstore::KV_STORE;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
@@ -13,6 +14,8 @@ mod kvstore;
 
 #[tokio::main]
 async fn main() {
+    KV_STORE.len(); // initialize singleton
+
     let listener = TcpListener::bind("127.0.0.1:6379")
         .await
         .expect("failed to bind to port 6379");
