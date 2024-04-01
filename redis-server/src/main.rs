@@ -1,20 +1,24 @@
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
+use tokio::spawn;
 
 mod serde;
-use serde::{TERM, deserialize, serialize, Error, Request, Response};
+use serde::{deserialize, serialize, Error, Request, Response, TERM};
 
 mod command;
 
 mod kvstore;
 
-fn main() {
-    let listener = TcpListener::bind("127.0.0.1:6379").expect("failed to bind to port 6379");
+#[tokio::main]
+async fn main() {
+    let listener = TcpListener::bind("127.0.0.1:6379")
+        .await
+        .expect("failed to bind to port 6379");
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(mut stream) => {
-                handle_client(&mut stream);
+    loop {
+        match listener.accept().await {
+            Ok((stream, _)) => {
+                spawn(handle_client(stream));
             }
             Err(e) => {
                 eprintln!("Error: {}", e);
@@ -23,14 +27,14 @@ fn main() {
     }
 }
 
-fn handle_client(stream: &mut TcpStream) {
+async fn handle_client(mut stream: TcpStream) {
     let mut buffer = [0; 1024];
     loop {
-        match stream.read(&mut buffer) {
+        match stream.read(&mut buffer).await {
             Ok(_) => {
                 // Process the request and send the response
                 let response = process_request(&buffer);
-                if let Err(e) = stream.write_all(response.as_bytes()) {
+                if let Err(e) = stream.write_all(response.as_bytes()).await {
                     eprintln!("Failed to write to stream: {}", e);
                     break;
                 }
