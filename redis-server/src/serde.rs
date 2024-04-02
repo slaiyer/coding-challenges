@@ -83,6 +83,7 @@ pub fn deserialize(s: &str) -> Result<Request, InvalidCommandError> {
     }
 }
 
+// TODO: reimplement this function referring https://redis.io/docs/reference/protocol-spec/#high-performance-parser-for-the-redis-protocol
 fn parse_bulk_string(s: &str) -> Result<Request, InvalidCommandError> {
     let mut commands = Vec::<Command>::new();
 
