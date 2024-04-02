@@ -1,6 +1,5 @@
 #![warn(unused_extern_crates)]
 
-use kvstore::KV_STORE;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
@@ -11,6 +10,7 @@ use serde::{deserialize, serialize, Error, Request, Response, TERM};
 mod command;
 
 mod kvstore;
+use kvstore::KV_STORE;
 
 #[tokio::main]
 async fn main() {
