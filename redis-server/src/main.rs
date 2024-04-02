@@ -37,7 +37,6 @@ async fn handle_client(mut stream: TcpStream) {
     loop {
         match stream.read(&mut buffer).await {
             Ok(_) => {
-                // Process the request and send the response
                 let response = process_request(&buffer);
                 if let Err(e) = stream.write_all(response.as_bytes()).await {
                     eprintln!("failed reading from stream: {:?}", e);
