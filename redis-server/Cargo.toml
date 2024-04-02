@@ -1,7 +1,12 @@
 [package]
 name = "redis-server"
+description = "A Redis server implementation in Rust"
+license = "WTFPL"
 version = "0.1.0"
 edition = "2021"
+repository = "https://www.github.com/slaiyer/coding-challenges"
+keywords = ["redis", "server", "database", "in-memory", "key-value", "store"]
+categories = ["database", "networking", "server"]
 
 [profile.release]
 codegen-units = 1
@@ -12,6 +17,14 @@ strip = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dashmap = { version = "5.5.3", features = ["serde", "rayon", "inline", "arbitrary"] }
+dashmap = { version = "5.5.3", features = [
+    "serde",
+    "rayon",
+    "inline",
+    "arbitrary",
+] }
 once_cell = "1.19.0"
 tokio = { version = "1.37.0", features = ["full"] }
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"
