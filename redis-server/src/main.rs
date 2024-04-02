@@ -1,5 +1,7 @@
 #![warn(unused_extern_crates)]
 
+use std::error;
+
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
@@ -13,12 +15,10 @@ mod kvstore;
 use kvstore::KV_STORE;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn error::Error>> {
     KV_STORE.len(); // initialize singleton
 
-    let listener = TcpListener::bind("127.0.0.1:6379")
-        .await
-        .expect("failed to bind to port 6379");
+    let listener = TcpListener::bind("127.0.0.1:6379").await?;
 
     loop {
         match listener.accept().await {
@@ -26,7 +26,7 @@ async fn main() {
                 spawn(handle_client(stream));
             }
             Err(e) => {
-                eprintln!("Error: {}", e);
+                eprintln!("failed to accept connection: {:?}", e);
             }
         }
     }
@@ -40,20 +40,20 @@ async fn handle_client(mut stream: TcpStream) {
                 // Process the request and send the response
                 let response = process_request(&buffer);
                 if let Err(e) = stream.write_all(response.as_bytes()).await {
-                    eprintln!("Failed to write to stream: {}", e);
+                    eprintln!("failed reading from stream: {:?}", e);
                     break;
                 }
             }
             Err(e) => {
-                eprintln!("Failed to read from stream: {}", e);
+                eprintln!("failed writing to stream: {:?}", e);
                 break;
             }
         }
     }
 }
 
-fn process_request(request: &[u8]) -> String {
-    let request_str = match String::from_utf8(request.to_vec()) {
+fn process_request(request_buf: &[u8]) -> String {
+    let request_str = match String::from_utf8(request_buf.to_vec()) {
         Ok(r) => r,
         Err(_) => return serialize(Response::Error(Error::new_generic("invalid request"))),
     };
@@ -81,6 +81,6 @@ fn handle_command(request: Request) -> String {
                 }
             }
             responses.join(TERM)
-        }
+        },
     }
 }
