@@ -80,7 +80,7 @@ fn handle_command(request: Request) -> String {
                     Err(error) => responses.push(error),
                 }
             }
-            responses.join(TERM)
-        },
+            responses.concat()
+        }
     }
 }

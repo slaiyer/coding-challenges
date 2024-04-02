@@ -139,20 +139,26 @@ impl Command {
                 }
 
                 match args[0].as_str().to_uppercase().as_str() {
-                    "GET" => {
-                        match args[1].as_str() {
-                            "save" => Ok(serialize(Response::SimpleString("".into()))),
-                            "appendonly" => Ok(serialize(Response::SimpleString("no".into()))),
-                            _ => Ok(serialize(Response::Error(Error::new_generic(
-                                "CONFIG GET only supports save, appendonly",
-                            )))),
-                        }
-                    }
-                    _ => Ok(serialize(Response::Error(Error::new_generic(
+                    // dummy response for redis-benchmark
+                    "GET" => Ok(
+                            serialize(
+                                Response::Array(vec![
+                                    "save".into(),
+                                    "".into(),
+                                ]),
+                            )
+                            + &serialize(
+                                Response::Array(vec![
+                                    "appendonly".into(),
+                                    "no".into(),
+                                ]),
+                            )
+                        ),
+                    _ => Err(serialize(Response::Error(Error::new_generic(
                         "CONFIG only supports GET",
                     )))),
                 }
-            },
+            }
         }
     }
 }
