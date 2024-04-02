@@ -96,7 +96,7 @@ fn parse_bulk_string(
     num_lines: usize,
     mut lines: std::str::Lines<'_>,
 ) -> Result<Request, InvalidCommandError> {
-    let mut commands = Vec::<Command>::new();
+    let mut commands = Vec::<String>::new();
 
     let mut line: &str;
     for _ in 0..num_lines {
@@ -116,13 +116,10 @@ fn parse_bulk_string(
             Some(l) => l,
             None => return Err(InvalidCommandError::MissingCommand),
         };
-        let command = match Command::new_from_str(&line[..len]) {
-            Ok(c) => c,
-            Err(_) => return Err(InvalidCommandError::InvalidCommand),
-        };
-        commands.push(command);
+        commands.push(line[..len].to_string());
     }
-    Ok(Request::Array(commands))
+    let command_str = commands.join(" ");
+    Ok(Request::InlineCommand(Command::new_from_str(&command_str)?))
 }
 
 pub fn serialize(r: Response) -> String {

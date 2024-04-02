@@ -5,6 +5,34 @@ use crate::kvstore::KV_STORE;
 use crate::serde::{serialize, Error, Response};
 
 #[derive(Debug, PartialEq)]
+pub enum CommandType {
+    Ping,
+    Echo,
+    Exists,
+    Set,
+    Get,
+    Del,
+    Config,
+}
+
+impl FromStr for CommandType {
+    type Err = InvalidCommandError;
+
+    fn from_str(s: &str) -> Result<Self, InvalidCommandError> {
+        match s.to_uppercase().as_str() {
+            "PING" => Ok(Self::Ping),
+            "ECHO" => Ok(Self::Echo),
+            "EXISTS" => Ok(Self::Exists),
+            "GET" => Ok(Self::Get),
+            "SET" => Ok(Self::Set),
+            "DEL" => Ok(Self::Del),
+            "CONFIG" => Ok(Self::Config),
+            _ => Err(InvalidCommandError::InvalidCommand),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Command {
     command: CommandType,
     args: Vec<String>,
@@ -27,22 +55,6 @@ impl fmt::Display for InvalidCommandError {
             InvalidCommandError::InvalidBulkStringLength => write!(f, "invalid bulk string length"),
             InvalidCommandError::InvalidCommandLength => write!(f, "invalid command length"),
             InvalidCommandError::MissingCommand => write!(f, "missing command"),
-        }
-    }
-}
-
-impl FromStr for CommandType {
-    type Err = InvalidCommandError;
-
-    fn from_str(s: &str) -> Result<Self, InvalidCommandError> {
-        match s.to_uppercase().as_str() {
-            "PING" => Ok(Self::Ping),
-            "ECHO" => Ok(Self::Echo),
-            "EXISTS" => Ok(Self::Exists),
-            "GET" => Ok(Self::Get),
-            "SET" => Ok(Self::Set),
-            "DEL" => Ok(Self::Del),
-            _ => Err(InvalidCommandError::InvalidCommand),
         }
     }
 }
@@ -119,16 +131,28 @@ impl Command {
                     None => Ok(serialize(Response::Integer(0))),
                 }
             }
+            CommandType::Config => {
+                if args.len() != 2 {
+                    return Err(serialize(Response::Error(Error::new_generic(
+                        "CONFIG requires two arguments",
+                    ))));
+                }
+
+                match args[0].as_str() {
+                    "GET" => {
+                        match args[1].as_str() {
+                            "save" => Ok(serialize(Response::SimpleString("".into()))),
+                            "appendonly" => Ok(serialize(Response::SimpleString("no".into()))),
+                            _ => Ok(serialize(Response::Error(Error::new_generic(
+                                "CONFIG GET only supports save, appendonly",
+                            )))),
+                        }
+                    }
+                    _ => Ok(serialize(Response::Error(Error::new_generic(
+                        "CONFIG only supports GET",
+                    )))),
+                }
+            },
         }
     }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum CommandType {
-    Ping,
-    Echo,
-    Exists,
-    Set,
-    Get,
-    Del,
 }
