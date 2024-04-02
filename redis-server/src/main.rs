@@ -7,7 +7,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
 
 mod serde;
-use serde::{deserialize, serialize, Error, Request, Response, TERM};
+use serde::{deserialize, serialize, Error, Request, Response};
 
 mod command;
 
