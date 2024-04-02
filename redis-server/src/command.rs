@@ -138,7 +138,7 @@ impl Command {
                     ))));
                 }
 
-                match args[0].as_str() {
+                match args[0].as_str().to_uppercase().as_str() {
                     "GET" => {
                         match args[1].as_str() {
                             "save" => Ok(serialize(Response::SimpleString("".into()))),
