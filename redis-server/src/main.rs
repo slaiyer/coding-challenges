@@ -1,12 +1,4 @@
-#![warn(
-    clippy::all,
-    clippy::suspicious,
-    clippy::complexity,
-    clippy::perf,
-    clippy::style,
-    clippy::pedantic,
-    clippy::nursery
-)]
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 #![warn(unused_extern_crates)]
 
 use std::error;
@@ -62,12 +54,12 @@ async fn handle_client(mut stream: TcpStream) {
 
 fn process_request(request_buf: &[u8]) -> String {
     let Ok(request_str) = String::from_utf8(request_buf.to_vec()) else {
-        return Response::Error(Error::new_generic("invalid request")).to_string();
+        return Response::Error(Error::new("", "invalid request")).to_string();
     };
 
-    let request = match deserialize(&request_str) {
+    let request = match deserialize(request_str.trim_matches('\0')) {
         Ok(r) => r,
-        Err(e) => return Response::Error(Error::new_generic(&e.to_string())).to_string(),
+        Err(e) => return Response::Error(Error::new("", &e.to_string())).to_string(),
     };
 
     handle_command(request)

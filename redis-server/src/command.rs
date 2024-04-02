@@ -27,7 +27,7 @@ impl FromStr for CmdType {
             "SET" => Ok(Self::Set),
             "DEL" => Ok(Self::Del),
             "CONFIG" => Ok(Self::Config),
-            _ => Err(InvalidCommandError::InvalidCommand),
+            _ => Err(InvalidCommandError::Command),
         }
     }
 }
@@ -40,26 +40,23 @@ pub struct Command {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum InvalidCommandError {
-    InvalidCommand,
-    NoCommands,
-    InvalidBulkStringLength,
-    InvalidCommandLength,
-    MissingCommand,
+    Command,
+    BulkStringLength,
+    CommandLength,
 }
 
 impl fmt::Display for InvalidCommandError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Self::InvalidCommand => write!(f, "invalid command"),
-            Self::NoCommands => write!(f, "no commands"),
-            Self::InvalidBulkStringLength => write!(f, "invalid bulk string length"),
-            Self::InvalidCommandLength => write!(f, "invalid command length"),
-            Self::MissingCommand => write!(f, "missing command"),
+            Self::Command => write!(f, "invalid command"),
+            Self::BulkStringLength => write!(f, "invalid bulk string length"),
+            Self::CommandLength => write!(f, "invalid command length"),
         }
     }
 }
 
 impl Command {
+    #[cfg(test)]
     pub fn new(command: CmdType, args: Vec<String>) -> Self {
         Self { command, args }
     }
@@ -89,10 +86,9 @@ impl Command {
             CmdType::Echo => Ok(Response::SimpleString(args.join(" ")).to_string()),
             CmdType::Exists => {
                 if args.len() != 1 {
-                    return Err(Response::Error(Error::new_generic(
-                        "EXISTS requires one argument",
-                    ))
-                    .to_string());
+                    return Err(
+                        Response::Error(Error::new("", "EXISTS requires one argument")).to_string(),
+                    );
                 }
 
                 let exists = KV_STORE.exists(&args[0]);
@@ -101,8 +97,7 @@ impl Command {
             CmdType::Set => {
                 if args.len() != 2 {
                     return Err(
-                        Response::Error(Error::new_generic("SET requires two arguments"))
-                            .to_string(),
+                        Response::Error(Error::new("", "SET requires two arguments")).to_string(),
                     );
                 }
 
@@ -112,8 +107,7 @@ impl Command {
             CmdType::Get => {
                 if args.len() != 1 {
                     return Err(
-                        Response::Error(Error::new_generic("GET requires one argument"))
-                            .to_string(),
+                        Response::Error(Error::new("", "GET requires one argument")).to_string()
                     );
                 }
 
@@ -125,8 +119,7 @@ impl Command {
             CmdType::Del => {
                 if args.len() != 1 {
                     return Err(
-                        Response::Error(Error::new_generic("DEL requires one argument"))
-                            .to_string(),
+                        Response::Error(Error::new("", "DEL requires one argument")).to_string()
                     );
                 }
 
@@ -137,23 +130,27 @@ impl Command {
             }
             CmdType::Config => {
                 if args.len() != 2 {
-                    return Err(Response::Error(Error::new_generic(
-                        "CONFIG requires two arguments",
-                    ))
-                    .to_string());
+                    return Err(
+                        Response::Error(Error::new("", "CONFIG requires two arguments"))
+                            .to_string(),
+                    );
                 }
 
                 match args[0].as_str().to_uppercase().as_str() {
-                    // dummy response for redis-benchmark
-                    "GET" => Ok(
-                        Response::Array(vec!["save".into(), String::new()]).to_string()
-                            + Response::Array(vec!["appendonly".into(), "no".into()])
-                                .to_string()
-                                .as_str(),
-                    ),
-                    _ => Err(
-                        Response::Error(Error::new_generic("CONFIG only supports GET")).to_string(),
-                    ),
+                    "GET" => match args[1].as_str() {
+                        "save" => Ok(Response::Array(vec!["save".into(), String::new()]).to_string()),
+                        "appendonly" => {
+                            Ok(Response::Array(vec!["appendonly".into(), "no".into()]).to_string())
+                        }
+                        _ => Err(Response::Error(Error::new(
+                            "",
+                            "CONFIG GET only supports save, appendonly",
+                        ))
+                        .to_string()),
+                    },
+                    _ => {
+                        Err(Response::Error(Error::new("", "CONFIG only supports GET")).to_string())
+                    }
                 }
             }
         }

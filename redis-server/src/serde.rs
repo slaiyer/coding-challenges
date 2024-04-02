@@ -5,6 +5,7 @@ use crate::command::{Command, InvalidCommandError};
 pub const TERM: &str = "\r\n";
 
 #[derive(Debug, PartialEq, Eq)]
+// #[cfg_attr(test, derive(Debug))]
 pub enum Request {
     Array(Vec<Command>),
     InlineCommand(Command),
@@ -38,16 +39,13 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn new_generic(message: &str) -> Self {
+    pub fn new(kind: &str, message: &str) -> Self {
         Self {
-            kind: "ERR".into(),
-            message: message.into(),
-        }
-    }
-
-    pub fn new_specific(kind: &str, message: &str) -> Self {
-        Self {
-            kind: kind.into(),
+            kind: match kind {
+                "" => "ERR",
+                _ => kind,
+            }
+            .into(),
             message: message.into(),
         }
     }
@@ -74,48 +72,60 @@ pub enum Response {
 }
 
 pub fn deserialize(s: &str) -> Result<Request, InvalidCommandError> {
-    let mut lines = s.lines();
-    let Some(line) = lines.next() else {
-        return Err(InvalidCommandError::NoCommands);
-    };
-    match line.chars().next() {
-        Some('*') => {
-            let Ok(num_lines) = line[1..].parse::<usize>() else {
-                return Err(InvalidCommandError::InvalidBulkStringLength);
-            };
-            parse_bulk_string(num_lines, lines)
-        }
-        _ => Command::new_from_str(line).map(Request::InlineCommand),
+    if s.is_empty() {
+        return Err(InvalidCommandError::Command);
+    }
+
+    if s.starts_with('*') {
+        parse_bulk_string(s)
+    } else {
+        Command::new_from_str(s).map(Request::InlineCommand)
     }
 }
 
-fn parse_bulk_string(
-    num_lines: usize,
-    mut lines: std::str::Lines<'_>,
-) -> Result<Request, InvalidCommandError> {
-    let mut commands = Vec::<String>::new();
+fn parse_bulk_string(s: &str) -> Result<Request, InvalidCommandError> {
+    let mut commands = Vec::<Command>::new();
 
-    let mut line: &str;
-    for _ in 0..num_lines {
-        line = match lines.next() {
-            Some(l) => l,
-            None => return Err(InvalidCommandError::NoCommands),
+    let command_strs = s.split('*').skip(1).collect::<Vec<&str>>();
+    for cmd_str in command_strs {
+        let cmd_frags = cmd_str.split('$').collect::<Vec<&str>>();
+
+        let num_cmd_frags = match cmd_frags[0].strip_suffix(TERM) {
+            Some(s) => match s.parse::<usize>() {
+                Ok(n) if n > 0 => n,
+                _ => return Err(InvalidCommandError::BulkStringLength),
+            },
+            None => return Err(InvalidCommandError::Command),
         };
-        let len_first_byte = &line[..1];
-        if len_first_byte != "$" {
-            return Err(InvalidCommandError::InvalidCommandLength);
-        };
-        let Ok(len) = line[1..].parse::<usize>() else {
-            return Err(InvalidCommandError::InvalidCommandLength);
-        };
-        line = match lines.next() {
-            Some(l) => l,
-            None => return Err(InvalidCommandError::MissingCommand),
-        };
-        commands.push(line[..len].to_string());
+
+        let mut cmd_frag_vec = Vec::with_capacity(num_cmd_frags);
+        for cmd_frag in cmd_frags.iter().skip(1).take(num_cmd_frags) {
+            let Some(cmd_frag) = cmd_frag.strip_suffix(TERM) else {
+                return Err(InvalidCommandError::Command);
+            };
+
+            let cmd_frag_split = cmd_frag.split(TERM).collect::<Vec<&str>>();
+            if cmd_frag_split.len() != 2 {
+                return Err(InvalidCommandError::Command);
+            }
+
+            let cmd_frag_len = match cmd_frag_split[0].parse::<usize>() {
+                Ok(n) if n > 0 => n,
+                _ => return Err(InvalidCommandError::CommandLength),
+            };
+
+            let Some(cmd) = cmd_frag_split[1].get(..cmd_frag_len) else {
+                return Err(InvalidCommandError::Command);
+            };
+
+            cmd_frag_vec.push(cmd.to_string());
+        }
+
+        let command = Command::new_from_str(&cmd_frag_vec.join(" "))?;
+        commands.push(command);
     }
-    let command_str = commands.join(" ");
-    Ok(Request::InlineCommand(Command::new_from_str(&command_str)?))
+
+    Ok(Request::Array(commands))
 }
 
 #[cfg(test)]
@@ -174,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_error_message() {
-        let a = Response::Error(Error::new_specific("", "Error message"));
+        let a = Response::Error(Error::new("", "Error message"));
         let b = "-ERR Error message\r\n";
         assert_eq!(a.to_string(), b);
     }
