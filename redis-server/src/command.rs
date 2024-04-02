@@ -91,7 +91,8 @@ impl Command {
                 if args.len() != 1 {
                     return Err(Response::Error(Error::new_generic(
                         "EXISTS requires one argument",
-                    )).to_string());
+                    ))
+                    .to_string());
                 }
 
                 let exists = KV_STORE.exists(&args[0]);
@@ -99,9 +100,10 @@ impl Command {
             }
             CmdType::Set => {
                 if args.len() != 2 {
-                    return Err(Response::Error(Error::new_generic(
-                        "SET requires two arguments",
-                    )).to_string());
+                    return Err(
+                        Response::Error(Error::new_generic("SET requires two arguments"))
+                            .to_string(),
+                    );
                 }
 
                 KV_STORE.set(args[0].clone(), args[1].clone());
@@ -109,9 +111,10 @@ impl Command {
             }
             CmdType::Get => {
                 if args.len() != 1 {
-                    return Err(Response::Error(Error::new_generic(
-                        "GET requires one argument",
-                    )).to_string());
+                    return Err(
+                        Response::Error(Error::new_generic("GET requires one argument"))
+                            .to_string(),
+                    );
                 }
 
                 KV_STORE.get(&args[0]).map_or_else(
@@ -121,9 +124,10 @@ impl Command {
             }
             CmdType::Del => {
                 if args.len() != 1 {
-                    return Err(Response::Error(Error::new_generic(
-                        "DEL requires one argument",
-                    )).to_string());
+                    return Err(
+                        Response::Error(Error::new_generic("DEL requires one argument"))
+                            .to_string(),
+                    );
                 }
 
                 match KV_STORE.del(&args[0]) {
@@ -135,16 +139,21 @@ impl Command {
                 if args.len() != 2 {
                     return Err(Response::Error(Error::new_generic(
                         "CONFIG requires two arguments",
-                    )).to_string());
+                    ))
+                    .to_string());
                 }
 
                 match args[0].as_str().to_uppercase().as_str() {
                     // dummy response for redis-benchmark
-                    "GET" => Ok(Response::Array(vec!["save".into(), String::new()]).to_string()
-                        + Response::Array(vec!["appendonly".into(), "no".into()]).to_string().as_str()),
-                    _ => Err(Response::Error(Error::new_generic(
-                        "CONFIG only supports GET",
-                    )).to_string()),
+                    "GET" => Ok(
+                        Response::Array(vec!["save".into(), String::new()]).to_string()
+                            + Response::Array(vec!["appendonly".into(), "no".into()])
+                                .to_string()
+                                .as_str(),
+                    ),
+                    _ => Err(
+                        Response::Error(Error::new_generic("CONFIG only supports GET")).to_string(),
+                    ),
                 }
             }
         }

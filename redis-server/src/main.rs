@@ -5,9 +5,8 @@
     clippy::perf,
     clippy::style,
     clippy::pedantic,
-    clippy::nursery,
+    clippy::nursery
 )]
-
 #![warn(unused_extern_crates)]
 
 use std::error;
