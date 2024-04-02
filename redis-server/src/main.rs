@@ -1,3 +1,13 @@
+#![warn(
+    clippy::all,
+    clippy::suspicious,
+    clippy::complexity,
+    clippy::perf,
+    clippy::style,
+    clippy::pedantic,
+    clippy::nursery,
+)]
+
 #![warn(unused_extern_crates)]
 
 use std::error;
@@ -7,7 +17,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
 
 mod serde;
-use serde::{deserialize, serialize, Error, Request, Response};
+use serde::{deserialize, Error, Request, Response};
 
 mod command;
 
@@ -26,7 +36,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                 spawn(handle_client(stream));
             }
             Err(e) => {
-                eprintln!("failed to accept connection: {:?}", e);
+                eprintln!("failed to accept connection: {e:?}");
             }
         }
     }
@@ -39,12 +49,12 @@ async fn handle_client(mut stream: TcpStream) {
             Ok(_) => {
                 let response = process_request(&buffer);
                 if let Err(e) = stream.write_all(response.as_bytes()).await {
-                    eprintln!("failed reading from stream: {:?}", e);
+                    eprintln!("failed reading from stream: {e:?}");
                     break;
                 }
             }
             Err(e) => {
-                eprintln!("failed writing to stream: {:?}", e);
+                eprintln!("failed writing to stream: {e:?}");
                 break;
             }
         }
@@ -52,14 +62,13 @@ async fn handle_client(mut stream: TcpStream) {
 }
 
 fn process_request(request_buf: &[u8]) -> String {
-    let request_str = match String::from_utf8(request_buf.to_vec()) {
-        Ok(r) => r,
-        Err(_) => return serialize(Response::Error(Error::new_generic("invalid request"))),
+    let Ok(request_str) = String::from_utf8(request_buf.to_vec()) else {
+        return Response::Error(Error::new_generic("invalid request")).to_string();
     };
 
     let request = match deserialize(&request_str) {
         Ok(r) => r,
-        Err(e) => return serialize(Response::Error(Error::new_generic(e.to_string().as_str()))),
+        Err(e) => return Response::Error(Error::new_generic(&e.to_string())).to_string(),
     };
 
     handle_command(request)
