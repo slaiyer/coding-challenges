@@ -1,16 +1,15 @@
+use crate::{kvstore::KV_STORE, response::types::Response};
+
 use super::types::{ArgumentError, Execute};
 
-use crate::response::types::Response;
-
-use crate::kvstore::KV_STORE;
-
-pub struct Exists {
+pub struct Del {
     key: String,
 }
 
-impl Execute for Exists {
+impl Execute for Del {
     fn execute(self: Box<Self>) -> Response {
-        Response::ss(&u64::from(KV_STORE.exists(&self.key)).to_string())
+        KV_STORE.del(&self.key);
+        Response::ss("OK")
     }
 }
 
@@ -28,8 +27,8 @@ impl Builder {
         self
     }
 
-    pub fn build(self) -> Result<Exists, ArgumentError> {
-        Ok(Exists {
+    pub fn build(self) -> Result<Del, ArgumentError> {
+        Ok(Del {
             key: self.key.ok_or(ArgumentError::Missing)?,
         })
     }

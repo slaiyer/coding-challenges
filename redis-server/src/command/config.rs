@@ -4,11 +4,13 @@ use crate::response::types::Response;
 
 use std::{error::Error, str::FromStr, vec};
 
-struct Config {
+#[derive(Debug)]
+pub struct Config {
     subcommand: ConfigSubcommand,
     args: Vec<String>,
 }
 
+#[derive(Debug)]
 enum ConfigSubcommand {
     Get,
 }
@@ -25,7 +27,7 @@ impl FromStr for ConfigSubcommand {
 }
 
 impl Execute for Config {
-    fn execute(&self) -> Response {
+    fn execute(self: Box<Self>) -> Response {
         match &self.subcommand {
             ConfigSubcommand::Get => self.args.first().map_or_else(
                 || Response::err("", "missing argument for CONFIG GET"),
@@ -48,12 +50,12 @@ impl Builder {
         Self { args_raw: None }
     }
 
-    fn args(mut self, args: Vec<String>) -> Self {
+    pub fn args(mut self, args: Vec<String>) -> Self {
         self.args_raw = Some(args);
         self
     }
 
-    fn build(self) -> Result<Config, Box<dyn Error>> {
+    pub fn build(self) -> Result<Config, Box<dyn Error>> {
         let Some(args_raw) = self.args_raw else {
             return Err(Box::new(SubcommandError::Missing));
         };

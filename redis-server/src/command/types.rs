@@ -2,11 +2,11 @@ use std::{error::Error, fmt, str::FromStr};
 
 use crate::response::types::Response;
 
-use super::{config, echo, exists, ping};
+use super::{config, echo, exists, ping, set, get, del};
 
 // TODO: make this trait required for all commands via a derive macro
 pub trait Execute {
-    fn execute(&self) -> Response;
+    fn execute(self: Box<Self>) -> Response;
 }
 
 pub enum Command {
@@ -14,9 +14,9 @@ pub enum Command {
     Echo(echo::Builder),
     Config(config::Builder),
     Exists(exists::Builder),
-    // Set,
-    // Get,
-    // Del,
+    Set(set::Builder),
+    Get(get::Builder),
+    Del(del::Builder),
     // LPush,
     // RPush,
     // Save,
@@ -46,9 +46,9 @@ impl FromStr for Command {
             "ECHO" => Ok(Self::Echo(echo::Builder::new())),
             "CONFIG" => Ok(Self::Config(config::Builder::new())),
             "EXISTS" => Ok(Self::Exists(exists::Builder::new())),
-            // "SET" => Ok(Self::Set),
-            // "GET" => Ok(Self::Get),
-            // "DEL" => Ok(Self::Del),
+            "SET" => Ok(Self::Set(set::Builder::new())),
+            "GET" => Ok(Self::Get(get::Builder::new())),
+            "DEL" => Ok(Self::Del(del::Builder::new())),
             // "LPUSH" => Ok(Self::LPush),
             // "RPUSH" => Ok(Self::RPush),
             // "SAVE" => Ok(Self::Save),

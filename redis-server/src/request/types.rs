@@ -9,6 +9,10 @@ impl Request {
     pub fn new(commands: Vec<Vec<String>>) -> Self {
         Self { commands }
     }
+
+    pub const fn commands(&self) -> &Vec<Vec<String>> {
+        &self.commands
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -64,6 +68,10 @@ fn parse_bulk_requests(s: &str) -> Result<Vec<Vec<String>>, ParseError> {
                     .parse::<usize>()
                     .map_err(|_| ParseError::InvalidBulkLength)?;
                 i = j + 2;
+
+                if num_tokens < 1 {
+                    return Err(ParseError::EmptyCommand);
+                }
 
                 // parse bulk request arguments
                 let mut cmd: Vec<String> = Vec::new();

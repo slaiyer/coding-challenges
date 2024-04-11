@@ -9,7 +9,7 @@ pub struct Ping {
 }
 
 impl Execute for Ping {
-    fn execute(&self) -> Response {
+    fn execute(self: Box<Self>) -> Response {
         self.message.as_ref().map_or_else(
             || Response::SimpleString("PONG".into()),
             |s| Response::ss(s),
@@ -35,12 +35,12 @@ impl Builder {
         Self { msg: None }
     }
 
-    fn message(mut self, message: &str) -> Self {
+    pub fn message(mut self, message: &str) -> Self {
         self.msg = Some(message.into());
         self
     }
 
-    fn build(self) -> Ping {
+    pub fn build(self) -> Ping {
         Ping {
             message: match self.msg {
                 Some(s) if !s.is_empty() => Some(s),

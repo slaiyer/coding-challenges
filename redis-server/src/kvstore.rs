@@ -14,7 +14,7 @@ impl KvStore {
         }
     }
 
-    fn save(&self) {
+    pub fn save(&self) {
         unimplemented!()
     }
 
@@ -30,15 +30,15 @@ impl KvStore {
         self.store.contains_key(key)
     }
 
-    fn get(&self, key: &str) -> Option<String> {
+    pub fn get(&self, key: &str) -> Option<String> {
         self.store.get(key).map(|v| v.value().clone())
     }
 
-    fn set(&self, key: &str, value: &str) {
+    pub fn set(&self, key: &str, value: &str) {
         self.store.insert(key.into(), value.into());
     }
 
-    fn del(&self, key: &str) -> Option<String> {
+    pub fn del(&self, key: &str) -> Option<String> {
         self.store.remove(key).map(|v| v.1)
     }
 }

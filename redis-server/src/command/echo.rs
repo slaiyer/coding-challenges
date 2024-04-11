@@ -2,12 +2,12 @@ use super::types::{ArgumentError, Execute};
 
 use crate::response::types::Response;
 
-struct Echo {
+pub struct Echo {
     message: String,
 }
 
 impl Execute for Echo {
-    fn execute(&self) -> Response {
+    fn execute(self: Box<Self>) -> Response {
         Response::ss(self.message.as_str())
     }
 }
@@ -21,12 +21,12 @@ impl Builder {
         Self { msg: None }
     }
 
-    fn message(mut self, message: &str) -> Self {
+    pub fn message(mut self, message: &str) -> Self {
         self.msg = Some(message.into());
         self
     }
 
-    fn build(self) -> Result<Echo, ArgumentError> {
+    pub fn build(self) -> Result<Echo, ArgumentError> {
         Ok(Echo {
             message: self.msg.ok_or(ArgumentError::Missing)?,
         })
