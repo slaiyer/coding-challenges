@@ -182,7 +182,8 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_token_length() {
-        let request_str = "*2\r\n$4\r\nping\r\n$4\r\nling\r\n*3\r\n$6\r\nconfig\r\n$3\r\nget\r\n$4\r\n";
+        let request_str =
+            "*2\r\n$4\r\nping\r\n$4\r\nling\r\n*3\r\n$6\r\nconfig\r\n$3\r\nget\r\n$4\r\n";
         let result = request_str.parse::<Request>();
         assert_eq!(result, Err(ParseError::InvalidTokenLength));
     }

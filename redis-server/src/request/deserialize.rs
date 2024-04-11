@@ -1,4 +1,7 @@
-use crate::{command::types::{Command, Execute}, response::types::Response};
+use crate::{
+    command::types::{Command, Execute},
+    response::types::Response,
+};
 
 use super::types::Request;
 
@@ -72,7 +75,7 @@ pub fn parse_commands(request: &Request) -> Result<Vec<Box<dyn Execute>>, String
                 },
                 _ => {
                     return Err(
-                        Response::err("", "unexpected number of arguments for SET").to_string(),
+                        Response::err("", "unexpected number of arguments for SET").to_string()
                     )
                 }
             },
@@ -83,7 +86,7 @@ pub fn parse_commands(request: &Request) -> Result<Vec<Box<dyn Execute>>, String
                 },
                 _ => {
                     return Err(
-                        Response::err("", "unexpected number of arguments for GET").to_string(),
+                        Response::err("", "unexpected number of arguments for GET").to_string()
                     )
                 }
             },
@@ -94,7 +97,7 @@ pub fn parse_commands(request: &Request) -> Result<Vec<Box<dyn Execute>>, String
                 },
                 _ => {
                     return Err(
-                        Response::err("", "unexpected number of arguments for DEL").to_string(),
+                        Response::err("", "unexpected number of arguments for DEL").to_string()
                     )
                 }
             },
@@ -125,7 +128,13 @@ mod tests {
     fn test_stringify_invalid_utf8() {
         let request_buf = b"\0\0ping\xFF ling\r\n\0\0";
         let result = stringify(request_buf);
-        assert_eq!(result, Err(Response::err("", "invalid utf-8 sequence of 1 bytes from index 6")));
+        assert_eq!(
+            result,
+            Err(Response::err(
+                "",
+                "invalid utf-8 sequence of 1 bytes from index 6"
+            ))
+        );
     }
 
     #[test]
@@ -156,6 +165,12 @@ mod tests {
         assert!(result.is_ok());
         let commands = result.unwrap();
         assert_eq!(commands.len(), 1);
-        assert_eq!(commands.into_iter().map(|cmd| cmd.execute().to_string()).collect::<String>(), "+ling\r\n");
+        assert_eq!(
+            commands
+                .into_iter()
+                .map(|cmd| cmd.execute().to_string())
+                .collect::<String>(),
+            "+ling\r\n"
+        );
     }
 }

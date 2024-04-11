@@ -45,7 +45,7 @@ impl Builder {
             message: match self.msg {
                 Some(s) if !s.is_empty() => Some(s),
                 _ => None,
-            }
+            },
         }
     }
 }

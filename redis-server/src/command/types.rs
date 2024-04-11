@@ -2,7 +2,7 @@ use std::{error::Error, fmt, str::FromStr};
 
 use crate::response::types::Response;
 
-use super::{config, echo, exists, ping, set, get, del};
+use super::{config, del, echo, exists, get, ping, set};
 
 // TODO: make this trait required for all commands via a derive macro
 pub trait Execute {
