@@ -1,3 +1,16 @@
+/// This module defines the types related to handling Redis requests.
+///
+/// The `Request` struct represents a Redis request, which consists of a list of commands.
+/// Each command is a list of strings.
+///
+/// The `ParseError` enum represents the possible errors that can occur during parsing of a Redis request.
+/// These errors include invalid request format, invalid bulk length, invalid token length,
+/// empty command, and empty request.
+///
+/// The `Request` struct and `ParseError` enum are implemented with various methods and traits
+/// to enable parsing of Redis requests from strings and conversion to and from other types.
+///
+/// The module also includes unit tests to verify the correctness of the parsing logic.
 use std::{error::Error, fmt, str::FromStr};
 
 #[derive(Debug, PartialEq, Eq)]

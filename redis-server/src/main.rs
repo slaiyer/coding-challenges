@@ -17,6 +17,7 @@ mod response;
 
 mod command;
 
+/// The main entry point of the Redis server.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
     KV_STORE.len(); // initialize singleton
@@ -35,6 +36,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     }
 }
 
+/// Handles a client connection by reading requests and sending responses.
 async fn handle_client(mut stream: TcpStream) {
     let mut buffer = [0; 1024];
     loop {
@@ -59,6 +61,7 @@ async fn handle_client(mut stream: TcpStream) {
     }
 }
 
+/// Processes a request and returns the corresponding response.
 fn process(request_buf: &[u8]) -> String {
     let request_str = match deserialize::stringify(request_buf) {
         Ok(result) => result,
