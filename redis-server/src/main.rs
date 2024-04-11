@@ -22,6 +22,8 @@ mod command;
 /// The main entry point of the Redis server.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
+    tracing_subscriber::fmt::init();
+
     KV_STORE.len(); // initialize singleton
 
     let listener = TcpListener::bind("127.0.0.1:6379").await?;
