@@ -93,6 +93,7 @@ impl KvStore {
     }
 }
 
+/// Drop is not called for static variables.
 impl Drop for KvStore {
     fn drop(&mut self) {
         self.save();
