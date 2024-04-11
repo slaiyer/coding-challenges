@@ -7,9 +7,19 @@ pub struct KvStore {
 
 impl KvStore {
     fn new() -> Self {
+        // TODO: load from disk
+
         Self {
             store: DashMap::new(),
         }
+    }
+
+    fn save(&self) {
+        unimplemented!()
+    }
+
+    fn load(&self) -> Self {
+        unimplemented!()
     }
 
     pub fn len(&self) -> usize {
@@ -20,16 +30,22 @@ impl KvStore {
         self.store.contains_key(key)
     }
 
-    pub fn set(&self, key: String, value: String) {
-        self.store.insert(key, value);
+    fn get(&self, key: &str) -> Option<String> {
+        self.store.get(key).map(|v| v.value().clone())
     }
 
-    pub fn get(&self, key: &str) -> Option<String> {
-        self.store.get(key).map(|value_ref| value_ref.clone())
+    fn set(&self, key: &str, value: &str) {
+        self.store.insert(key.into(), value.into());
     }
 
-    pub fn del(&self, key: &str) -> Option<String> {
-        self.store.remove(key).map(|(_, v)| v)
+    fn del(&self, key: &str) -> Option<String> {
+        self.store.remove(key).map(|v| v.1)
+    }
+}
+
+impl Drop for KvStore {
+    fn drop(&mut self) {
+        self.save();
     }
 }
 

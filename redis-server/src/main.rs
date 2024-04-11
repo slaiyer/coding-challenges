@@ -1,5 +1,5 @@
+#![warn(rust_2018_idioms, future_incompatible)]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
-#![warn(unused_extern_crates)]
 
 use std::error;
 
@@ -7,13 +7,15 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
 
-mod serde;
-use serde::{deserialize, Error, Request, Response};
-
-mod command;
-
 mod kvstore;
 use kvstore::KV_STORE;
+
+mod request;
+use request::{deserialize, types::Request};
+
+mod response;
+
+mod command;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
@@ -38,48 +40,30 @@ async fn handle_client(mut stream: TcpStream) {
     loop {
         match stream.read(&mut buffer).await {
             Ok(_) => {
-                let response = process_request(&buffer);
+                let response = process(&buffer);
                 if let Err(e) = stream.write_all(response.as_bytes()).await {
-                    eprintln!("failed reading from stream: {e:?}");
+                    eprintln!("failed writing to stream: {e:?}");
                     break;
                 }
             }
             Err(e) => {
-                eprintln!("failed writing to stream: {e:?}");
+                eprintln!("failed reading from stream: {e:?}");
                 break;
             }
         }
     }
 }
 
-fn process_request(request_buf: &[u8]) -> String {
-    let Ok(request_str) = String::from_utf8(request_buf.to_vec()) else {
-        return Response::Error(Error::new("", "invalid request")).to_string();
+fn process(request_buf: &[u8]) -> String {
+    let request_str = match deserialize::stringify(request_buf) {
+        Ok(result) => result,
+        Err(error) => return error.to_string(),
     };
 
-    let request = match deserialize(request_str.trim_matches('\0')) {
-        Ok(r) => r,
-        Err(e) => return Response::Error(Error::new("", &e.to_string())).to_string(),
+    let commands = match request_str.parse::<Request>() {
+        Ok(result) => result,
+        Err(error) => return error.to_string(),
     };
 
-    handle_command(request)
-}
-
-fn handle_command(request: Request) -> String {
-    match request {
-        Request::InlineCommand(c) => match c.execute() {
-            Ok(response) => response,
-            Err(error) => error,
-        },
-        Request::Array(commands) => {
-            let mut responses = Vec::<String>::new();
-            for c in commands {
-                match c.execute() {
-                    Ok(response) => responses.push(response),
-                    Err(error) => responses.push(error),
-                }
-            }
-            responses.concat()
-        }
-    }
+    String::new()
 }
