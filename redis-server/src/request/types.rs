@@ -11,7 +11,7 @@ impl Request {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ParseError {
     InvalidRequest,
     InvalidBulkLength,
@@ -57,7 +57,7 @@ fn parse_bulk_requests(s: &str) -> Result<Vec<Vec<String>>, ParseError> {
             Some('*') => {
                 // parse bulk request length
                 let mut j = i + 1;
-                while chars[j] != '\r' {
+                while j < s.len() && chars[j] != '\r' {
                     j += 1;
                 }
                 num_tokens = s[i + 1..j]
@@ -69,18 +69,21 @@ fn parse_bulk_requests(s: &str) -> Result<Vec<Vec<String>>, ParseError> {
                 let mut cmd: Vec<String> = Vec::new();
                 for _ in 0..num_tokens {
                     // parse token length
-                    if chars[i] != '$' {
+                    if chars.get(i) != Some(&'$') {
                         return Err(ParseError::InvalidTokenLength);
                     }
                     i += 1;
 
                     let mut j = i;
-                    while chars[j] != '\r' {
+                    while j < s.len() && chars[j] != '\r' {
                         j += 1;
                     }
                     let token_len = s[i..j]
                         .parse::<usize>()
                         .map_err(|_| ParseError::InvalidTokenLength)?;
+                    if i + token_len >= s.len() {
+                        return Err(ParseError::InvalidTokenLength);
+                    }
                     i = j + 2;
 
                     // parse token
@@ -160,5 +163,54 @@ mod tests {
                 vec!["config".into(), "get".into(), "save".into(),],
             ],),
         );
+    }
+
+    #[test]
+    fn test_parse_invalid_bulk_length() {
+        let request_str = "*2\r\n$4\r\nping\r\n$4\r\nling\r\n*3\r\n$6\r\nconfig\r\n$3\r\nget\r\n";
+        let result = request_str.parse::<Request>();
+        assert_eq!(result, Err(ParseError::InvalidTokenLength));
+    }
+
+    #[test]
+    fn test_parse_invalid_token_length() {
+        let request_str = "*2\r\n$4\r\nping\r\n$4\r\nling\r\n*3\r\n$6\r\nconfig\r\n$3\r\nget\r\n$4\r\n";
+        let result = request_str.parse::<Request>();
+        assert_eq!(result, Err(ParseError::InvalidTokenLength));
+    }
+
+    #[test]
+    fn test_parse_empty_command() {
+        let request_str = "ping\r\n\r\n";
+        let result = request_str.parse::<Request>();
+        assert_eq!(result, Err(ParseError::EmptyCommand));
+    }
+
+    #[test]
+    fn test_parse_empty_request() {
+        let request_str = "";
+        let result = request_str.parse::<Request>();
+        assert_eq!(result, Err(ParseError::EmptyRequest));
+    }
+
+    #[test]
+    fn test_parse_invalid_request2() {
+        let request_str = "*2\r\n$4\r\nping\r\n$4\r\nling\r\n$3\r\nget\r\n";
+        let result = request_str.parse::<Request>();
+        assert_eq!(result, Err(ParseError::InvalidRequest));
+    }
+
+    #[test]
+    fn test_parse_invalid_request3() {
+        let request_str = "*2\r\n$4\r\nping\r\n$4\r\nling\r\n$3\r\nget\r\n$4\r\nsave\r\n";
+        let result = request_str.parse::<Request>();
+        assert_eq!(result, Err(ParseError::InvalidRequest));
+    }
+
+    #[test]
+    fn test_parse_invalid_request4() {
+        let request_str = "*2\r\n$4\r\nping\r\n$4\r\nling\r\n$3\r\nget\r\n$4\r\nsave\r\n$4\r\n";
+        let result = request_str.parse::<Request>();
+        assert_eq!(result, Err(ParseError::InvalidRequest));
     }
 }

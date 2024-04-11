@@ -26,4 +26,32 @@ mod tests {
         let result = stringify(request_buf);
         assert_eq!(result, Ok("*2\r\n$4ping\r\n$4ling\r\n".into()));
     }
+
+    #[test]
+    fn test_stringify_invalid_utf8() {
+        let request_buf = b"\0\0ping\xFF ling\r\n\0\0";
+        let result = stringify(request_buf);
+        assert_eq!(result, Err(Response::err("", "invalid utf-8 sequence of 1 bytes from index 6")));
+    }
+
+    #[test]
+    fn test_stringify_empty_request() {
+        let request_buf = b"\0\0\0\0";
+        let result = stringify(request_buf);
+        assert_eq!(result, Ok(String::new()));
+    }
+
+    #[test]
+    fn test_stringify_empty_command() {
+        let request_buf = b"\0\0\r\n\0\0";
+        let result = stringify(request_buf);
+        assert_eq!(result, Ok("\r\n".into()));
+    }
+
+    #[test]
+    fn test_stringify_empty_arg() {
+        let request_buf = b"\0\0ping \r\n\0\0";
+        let result = stringify(request_buf);
+        assert_eq!(result, Ok("ping \r\n".into()));
+    }
 }

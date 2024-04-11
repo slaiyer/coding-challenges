@@ -60,10 +60,12 @@ fn process(request_buf: &[u8]) -> String {
         Err(error) => return error.to_string(),
     };
 
-    let commands = match request_str.parse::<Request>() {
+    let request = match request_str.parse::<Request>() {
         Ok(result) => result,
         Err(error) => return error.to_string(),
     };
+
+
 
     String::new()
 }
