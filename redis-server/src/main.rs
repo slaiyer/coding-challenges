@@ -7,6 +7,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
 
+use tracing::{error, instrument};
+
 mod kvstore;
 use kvstore::KV_STORE;
 
@@ -30,13 +32,14 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                 spawn(handle_client(stream));
             }
             Err(e) => {
-                eprintln!("failed to accept connection: {e:?}");
+                error!("failed to accept connection: {e:?}");
             }
         }
     }
 }
 
 /// Handles a client connection by reading requests and sending responses.
+#[instrument]
 async fn handle_client(mut stream: TcpStream) {
     let mut buffer = [0; 1024];
     loop {
@@ -49,12 +52,12 @@ async fn handle_client(mut stream: TcpStream) {
 
                 let response = process(&buffer);
                 if let Err(e) = stream.write_all(response.as_bytes()).await {
-                    eprintln!("failed writing to stream: {e:?}");
+                    error!("failed writing to stream: {e:?}");
                     break;
                 }
             }
             Err(e) => {
-                eprintln!("failed reading from stream: {e:?}");
+                error!("failed reading from stream: {e:?}");
                 break;
             }
         }
