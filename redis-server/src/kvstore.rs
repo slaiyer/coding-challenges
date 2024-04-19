@@ -22,16 +22,7 @@ impl KvStore {
 
     /// Saves the contents of the key-value store to disk.
     pub fn save(&self) {
-        unimplemented!()
-    }
-
-    /// Loads the contents of the key-value store from disk.
-    ///
-    /// # Returns
-    ///
-    /// A new `KvStore` instance with the loaded contents.
-    fn load(&self) -> Self {
-        unimplemented!()
+        todo!()
     }
 
     /// Returns the number of key-value pairs in the store.

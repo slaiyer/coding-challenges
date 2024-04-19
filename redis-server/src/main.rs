@@ -1,5 +1,10 @@
-#![warn(rust_2018_idioms, future_incompatible)]
-#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+#![warn(
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    rust_2024_compatibility,
+    future_incompatible
+)]
 
 use std::{error, str::FromStr};
 

@@ -30,7 +30,7 @@ pub enum CommandError {
 impl Error for CommandError {}
 
 impl fmt::Display for CommandError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Self::Unknown => write!(f, "unknown command"),
         }
@@ -66,8 +66,8 @@ pub enum SubcommandError {
 impl Error for SubcommandError {}
 
 impl fmt::Display for SubcommandError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
             Self::Missing => write!(f, "missing subcommand"),
             Self::Unknown => write!(f, "unknown subcommand"),
         }
@@ -82,7 +82,7 @@ pub enum ArgumentError {
 impl Error for ArgumentError {}
 
 impl fmt::Display for ArgumentError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Self::Missing => write!(f, "missing argument"),
         }

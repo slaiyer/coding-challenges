@@ -25,7 +25,7 @@ impl Execute for Ping {
 
 impl fmt::Display for Ping {
     /// Formats the `Ping` command for display purposes.
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.message {
             Some(s) => write!(f, "PING {s}"),
             None => write!(f, "PING"),

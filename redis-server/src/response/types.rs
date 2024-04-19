@@ -9,8 +9,6 @@ pub enum Response {
     SimpleString(String),
     /// Represents an error response.
     Error(RedisError),
-    /// Represents an integer response.
-    Integer(i64),
     /// Represents a null response.
     Null,
     /// Represents an array response.
@@ -33,16 +31,6 @@ impl Response {
         Self::Error(RedisError::new("ERR", e.to_string().as_str()))
     }
 
-    /// Creates a new `Response` object with an integer response.
-    pub const fn i(i: i64) -> Self {
-        Self::Integer(i)
-    }
-
-    /// Creates a new `Response` object with a null response.
-    pub const fn null() -> Self {
-        Self::Null
-    }
-
     /// Creates a new `Response` object with an array response.
     pub fn arr(arr: Vec<String>) -> Self {
         Self::Array(arr)
@@ -51,11 +39,10 @@ impl Response {
 
 impl fmt::Display for Response {
     /// Formats the `Response` object as a string.
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::SimpleString(s) => write!(f, "+{s}{TERM}"),
             Self::Error(e) => write!(f, "{e}"),
-            Self::Integer(i) => write!(f, ":{i}{TERM}"),
             Self::Null => write!(f, "$-1{TERM}"),
             Self::Array(arr) => {
                 let mut res = format!("*{}{TERM}", arr.len());
@@ -91,7 +78,7 @@ impl RedisError {
 
 impl fmt::Display for RedisError {
     /// Formats the `RedisError` object as a string.
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let kind = match self.kind {
             ref s if s.is_empty() => "ERR ".to_string(),
             ref s => format!("{s} "),

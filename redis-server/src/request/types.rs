@@ -38,7 +38,7 @@ pub enum ParseError {
 }
 
 impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::InvalidRequest => write!(f, "invalid request"),
             Self::InvalidBulkLength => write!(f, "invalid bulk length"),
