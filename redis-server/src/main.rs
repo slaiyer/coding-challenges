@@ -1,7 +1,7 @@
 #![warn(rust_2018_idioms, future_incompatible)]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
-use std::error;
+use std::{error, str::FromStr};
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -73,7 +73,7 @@ fn process(request_buf: &[u8]) -> String {
         Err(error) => return error.to_string(),
     };
 
-    let request = match request_str.parse::<Request>() {
+    let request = match Request::from_str(request_str) {
         Ok(result) => result,
         Err(error) => return error.to_string(),
     };

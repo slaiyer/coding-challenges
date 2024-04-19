@@ -56,20 +56,23 @@ impl Builder {
     }
 
     pub fn build(self) -> Result<Config, Box<dyn Error>> {
-        let Some(args_raw) = self.args_raw else {
+        let Some(args) = self.args_raw else {
             return Err(Box::new(SubcommandError::Missing));
         };
 
-        let subcommand = match args_raw.first() {
-            Some(sub) => sub.parse()?,
+        let subcommand = match args.first() {
+            Some(sub) => ConfigSubcommand::from_str(sub)?,
             None => return Err(Box::new(SubcommandError::Missing)),
         };
 
-        let args: Vec<_> = args_raw.into_iter().skip(1).collect();
-        if args.iter().any(String::is_empty) {
+        let mut args_iter = args.iter().skip(1);
+        if args_iter.any(String::is_empty) {
             Err(Box::new(ArgumentError::Missing))
         } else {
-            Ok(Config { subcommand, args })
+            Ok(Config {
+                subcommand,
+                args: args_iter.map(String::to_string).collect(),
+            })
         }
     }
 }

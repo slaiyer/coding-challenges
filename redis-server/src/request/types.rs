@@ -67,51 +67,13 @@ fn parse_bulk_requests(s: &str) -> Result<Vec<Vec<String>>, ParseError> {
     let mut commands: Vec<Vec<String>> = Vec::new();
 
     let chars: Vec<_> = s.chars().collect();
-    let mut num_tokens: usize;
+    let mut num_tokens = usize::default();
     let mut i = 0;
     while i < chars.len() {
         match chars.get(i) {
             Some('*') => {
-                // parse bulk request length
-                let mut j = i + 1;
-                while j < s.len() && chars[j] != '\r' {
-                    j += 1;
-                }
-                num_tokens = s[i + 1..j]
-                    .parse::<usize>()
-                    .map_err(|_| ParseError::InvalidBulkLength)?;
-                i = j + 2;
-
-                if num_tokens < 1 {
-                    return Err(ParseError::EmptyCommand);
-                }
-
-                // parse bulk request arguments
-                let mut cmd: Vec<String> = Vec::new();
-                for _ in 0..num_tokens {
-                    // parse token length
-                    if chars.get(i) != Some(&'$') {
-                        return Err(ParseError::InvalidTokenLength);
-                    }
-                    i += 1;
-
-                    let mut j = i;
-                    while j < s.len() && chars[j] != '\r' {
-                        j += 1;
-                    }
-                    let token_len = s[i..j]
-                        .parse::<usize>()
-                        .map_err(|_| ParseError::InvalidTokenLength)?;
-                    if i + token_len >= s.len() {
-                        return Err(ParseError::InvalidTokenLength);
-                    }
-                    i = j + 2;
-
-                    // parse token
-                    let token = s[i..i + token_len].into();
-                    cmd.push(token);
-                    i += token_len + 2;
-                }
+                parse_bulk_request_length(s, &chars, &mut i, &mut num_tokens)?;
+                let cmd = parse_bulk_request_args(s, &chars, &mut i, num_tokens)?;
 
                 commands.push(cmd);
             }
@@ -120,6 +82,67 @@ fn parse_bulk_requests(s: &str) -> Result<Vec<Vec<String>>, ParseError> {
     }
 
     Ok(commands)
+}
+
+fn parse_bulk_request_length(
+    s: &str,
+    chars: &[char],
+    i: &mut usize,
+    num_tokens: &mut usize,
+) -> Result<(), ParseError> {
+    let mut j = *i + 1;
+    while j < s.len() && chars[j] != '\r' {
+        j += 1;
+    }
+
+    *num_tokens = s[*i + 1..j]
+        .parse::<usize>()
+        .map_err(|_| ParseError::InvalidBulkLength)?;
+    *i = j + 2;
+
+    if *num_tokens < 1 {
+        return Err(ParseError::EmptyCommand);
+    }
+
+    Ok(())
+}
+
+fn parse_bulk_request_args(
+    s: &str,
+    chars: &[char],
+    i: &mut usize,
+    num_tokens: usize,
+) -> Result<Vec<String>, ParseError> {
+    let mut cmd: Vec<String> = Vec::new();
+    for _ in 0..num_tokens {
+        // parse token length
+        if chars.get(*i) != Some(&'$') {
+            return Err(ParseError::InvalidTokenLength);
+        }
+        *i += 1;
+
+        let mut j = *i;
+        while j < s.len() && chars[j] != '\r' {
+            j += 1;
+        }
+
+        let token_len = s[*i..j]
+            .parse::<usize>()
+            .map_err(|_| ParseError::InvalidTokenLength)?;
+
+        if *i + token_len >= s.len() {
+            return Err(ParseError::InvalidTokenLength);
+        }
+        *i = j + 2;
+
+        // parse token
+        let token = s[*i..*i + token_len].into();
+        *i += token_len + 2;
+
+        cmd.push(token);
+    }
+
+    Ok(cmd)
 }
 
 fn parse_inline_request(s: &str) -> Result<Vec<Vec<String>>, ParseError> {

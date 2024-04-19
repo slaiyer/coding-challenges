@@ -16,13 +16,11 @@ use super::types::Request;
 /// # Returns
 ///
 /// * `Result<String, Response>` - The deserialized Redis request as a string, or an error response.
-pub fn stringify(request_buf: &[u8]) -> Result<String, Response> {
-    let request_str: String = match std::str::from_utf8(request_buf) {
-        Ok(s) => s.into(),
-        Err(e) => return Err(Response::err_from_error(e)),
-    };
-
-    Ok(request_str.trim_matches('\0').into())
+pub fn stringify(request_buf: &[u8]) -> Result<&str, Response> {
+    match std::str::from_utf8(request_buf) {
+        Ok(s) => Ok(s.trim_matches('\0')),
+        Err(e) => Err(Response::err_from_error(e)),
+    }
 }
 
 /// Parses a Redis request into a vector of executable commands.
@@ -136,7 +134,7 @@ mod tests {
     fn test_stringify_inline_cmd_arg() {
         let request_buf = b"\0\0ping ling\r\n\0\0";
         let result = stringify(request_buf);
-        assert_eq!(result, Ok("ping ling\r\n".into()));
+        assert_eq!(result, Ok("ping ling\r\n"));
     }
 
     /// Test case for `stringify` function with a bulk command argument.
@@ -144,7 +142,7 @@ mod tests {
     fn test_stringify_bulk_cmd_arg() {
         let request_buf = b"\0\0*2\r\n$4ping\r\n$4ling\r\n\0\0";
         let result = stringify(request_buf);
-        assert_eq!(result, Ok("*2\r\n$4ping\r\n$4ling\r\n".into()));
+        assert_eq!(result, Ok("*2\r\n$4ping\r\n$4ling\r\n"));
     }
 
     /// Test case for `stringify` function with an invalid UTF-8 sequence.
@@ -166,7 +164,7 @@ mod tests {
     fn test_stringify_empty_request() {
         let request_buf = b"\0\0\0\0";
         let result = stringify(request_buf);
-        assert_eq!(result, Ok(String::new()));
+        assert_eq!(result, Ok(""));
     }
 
     /// Test case for `stringify` function with an empty command.
@@ -174,7 +172,7 @@ mod tests {
     fn test_stringify_empty_command() {
         let request_buf = b"\0\0\r\n\0\0";
         let result = stringify(request_buf);
-        assert_eq!(result, Ok("\r\n".into()));
+        assert_eq!(result, Ok("\r\n"));
     }
 
     /// Test case for `stringify` function with an empty argument.
@@ -182,7 +180,7 @@ mod tests {
     fn test_stringify_empty_arg() {
         let request_buf = b"\0\0ping \r\n\0\0";
         let result = stringify(request_buf);
-        assert_eq!(result, Ok("ping \r\n".into()));
+        assert_eq!(result, Ok("ping \r\n"));
     }
 
     /// Test case for `parse_commands` function with an "echo" command.
