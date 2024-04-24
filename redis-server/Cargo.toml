@@ -9,10 +9,11 @@ keywords = ["redis", "server", "database", "in-memory", "key-value", "store"]
 categories = ["database", "networking", "server"]
 
 [profile.release]
-codegen-units = 1
 opt-level = 3
+codegen-units = 1
 lto = true
 strip = true
+panic = "abort"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
