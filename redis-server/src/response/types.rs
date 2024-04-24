@@ -55,6 +55,13 @@ impl fmt::Display for Response {
     }
 }
 
+impl From<Response> for String {
+    /// Converts a `Response` object to a string.
+    fn from(r: Response) -> Self {
+        format!("{r}")
+    }
+}
+
 /// Represents an error returned by a Redis server.
 #[derive(Debug, PartialEq, Eq)]
 pub struct RedisError {

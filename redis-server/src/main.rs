@@ -90,6 +90,7 @@ fn process(request_buf: &[u8]) -> String {
 
     commands
         .into_iter()
-        .map(|command| command.execute().to_string())
+        .map(command::types::Execute::execute)
+        .map(String::from)
         .collect()
 }
