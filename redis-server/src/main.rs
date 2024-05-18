@@ -1,23 +1,18 @@
 #![warn(clippy::all, clippy::pedantic, future_incompatible)]
 
-use std::error;
-
 use response::types::Response;
+use std::error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
-
 use tracing::{error, instrument};
 
 mod kvstore;
 use kvstore::KV_STORE;
-
 mod request;
 use request::{deserialize, types::Request};
-
-mod response;
-
 mod command;
+mod response;
 
 /// The main entry point of the Redis server.
 #[tokio::main]
@@ -60,6 +55,7 @@ async fn handle_client(mut stream: TcpStream) {
             }
             Err(e) => {
                 if e.raw_os_error() != Some(54) {
+                    // ignore connection reset by peer
                     error!("failed reading from stream: {e:?}");
                 }
                 break;
