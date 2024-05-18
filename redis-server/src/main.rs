@@ -49,7 +49,7 @@ async fn handle_client(mut stream: TcpStream) {
         match stream.read(&mut buffer).await {
             Ok(buf_len) => {
                 if buf_len == 0 {
-                    continue;
+                    break;
                 }
 
                 let response = process(&buffer);
