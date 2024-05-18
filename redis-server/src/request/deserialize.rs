@@ -93,6 +93,7 @@ pub fn parse_commands(request: &Request) -> Result<Vec<Command>, Response> {
 /// Module containing unit tests for the `stringify` and `parse_commands` functions.
 mod tests {
     use super::*;
+    use crate::command;
 
     /// Test case for `parse_commands` function with an "echo" command.
     #[test]
@@ -105,7 +106,8 @@ mod tests {
         assert_eq!(
             commands
                 .into_iter()
-                .map(|cmd| cmd.execute().to_string())
+                .map(command::types::Execute::execute)
+                .map(String::from)
                 .collect::<String>(),
             "+ling\r\n"
         );
