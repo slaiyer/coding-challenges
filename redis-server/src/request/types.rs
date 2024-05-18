@@ -11,7 +11,11 @@
 /// to enable parsing of Redis requests from strings and conversion to and from other types.
 ///
 /// The module also includes unit tests to verify the correctness of the parsing logic.
-use std::{error::Error, fmt, str::FromStr};
+use std::{
+    error::Error,
+    fmt,
+    str::{FromStr, Utf8Error},
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Request {
@@ -28,8 +32,26 @@ impl Request {
     }
 }
 
+impl TryFrom<&[u8]> for Request {
+    type Error = ParseError;
+
+    fn try_from(request_buf: &[u8]) -> Result<Self, Self::Error> {
+        let request_str = match std::str::from_utf8(request_buf) {
+            Ok(result) => result.trim_matches('\0'),
+            Err(error) => return Err(Self::Error::Utf8(error)),
+        };
+
+        Ok(Self::new(if request_str.starts_with('*') {
+            parse_bulk_requests(request_str)?
+        } else {
+            parse_inline_request(request_str)?
+        }))
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseError {
+    Utf8(Utf8Error),
     InvalidRequest,
     InvalidBulkLength,
     InvalidTokenLength,
@@ -40,6 +62,7 @@ pub enum ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::Utf8(e) => write!(f, "invalid UTF-8: {e}"),
             Self::InvalidRequest => write!(f, "invalid request"),
             Self::InvalidBulkLength => write!(f, "invalid bulk length"),
             Self::InvalidTokenLength => write!(f, "invalid token length"),
@@ -49,7 +72,23 @@ impl fmt::Display for ParseError {
     }
 }
 
-impl Error for ParseError {}
+impl Error for ParseError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Utf8(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+
+// Implement the conversion from `Utf8Error` to `ParseError`.
+// This will be automatically called by `?` if a `Utf8Error`
+// needs to be converted into a `ParseError`.
+impl From<Utf8Error> for ParseError {
+    fn from(err: Utf8Error) -> Self {
+        Self::Utf8(err)
+    }
+}
 
 impl FromStr for Request {
     type Err = ParseError;
