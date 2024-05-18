@@ -1,13 +1,8 @@
-#![warn(
-    clippy::all,
-    clippy::pedantic,
-    clippy::nursery,
-    rust_2024_compatibility,
-    future_incompatible
-)]
+#![warn(clippy::all, clippy::pedantic, future_incompatible)]
 
-use std::{error, str::FromStr};
+use std::error;
 
+use response::types::Response;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
@@ -48,12 +43,12 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 /// Handles a client connection by reading requests and sending responses.
 #[instrument]
 async fn handle_client(mut stream: TcpStream) {
-    let mut buffer = [0; 1024];
+    let mut buffer = [0; 1_024];
+
     loop {
         match stream.read(&mut buffer).await {
-            Ok(_) => {
-                let first_byte = buffer[0];
-                if first_byte == 0 || first_byte == b'\r' || first_byte == b'\n' {
+            Ok(buf_len) => {
+                if buf_len == 0 {
                     continue;
                 }
 
@@ -73,24 +68,17 @@ async fn handle_client(mut stream: TcpStream) {
 
 /// Processes a request and returns the corresponding response.
 fn process(request_buf: &[u8]) -> String {
-    let request_str = match deserialize::stringify(request_buf) {
-        Ok(result) => result,
-        Err(error) => return error.to_string(),
-    };
-
-    let request = match Request::from_str(request_str) {
-        Ok(result) => result,
-        Err(error) => return error.to_string(),
-    };
-
-    let commands = match deserialize::parse_commands(&request) {
-        Ok(value) => value,
-        Err(value) => return value,
-    };
-
-    commands
-        .into_iter()
-        .map(command::types::Execute::execute)
-        .map(String::from)
-        .collect()
+    Request::try_from(request_buf)
+        .map_err(|e| Response::err_from_error(e).to_string())
+        .and_then(|request: Request| deserialize::parse_commands(&request))
+        .map_or_else(
+            |error| error,
+            |commands| {
+                commands
+                    .into_iter()
+                    .map(command::types::Execute::execute)
+                    .map(String::from)
+                    .collect()
+            },
+        )
 }
