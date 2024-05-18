@@ -1,7 +1,7 @@
 #![warn(clippy::all, clippy::pedantic, future_incompatible)]
 
 use response::types::Response;
-use std::error;
+use std::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
@@ -16,7 +16,7 @@ mod response;
 
 /// The main entry point of the Redis server.
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn error::Error>> {
+async fn main() -> Result<(), io::Error> {
     tracing_subscriber::fmt::init();
 
     KV_STORE.len(); // initialize singleton
