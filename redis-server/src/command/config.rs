@@ -2,6 +2,7 @@ use super::types::{ArgumentError, Execute, SubcommandError};
 
 use crate::response::types::Response;
 
+use core::fmt;
 use std::{error::Error, str::FromStr, vec};
 
 #[derive(Debug)]
@@ -27,7 +28,7 @@ impl FromStr for ConfigSubcommand {
 }
 
 impl Execute for Config {
-    fn execute(self: Box<Self>) -> Response {
+    fn execute(self) -> Response {
         match &self.subcommand {
             ConfigSubcommand::Get => self.args.first().map_or_else(
                 || Response::err("", "missing argument for CONFIG GET"),
@@ -45,6 +46,29 @@ pub struct Builder {
     args_raw: Option<Vec<String>>,
 }
 
+#[derive(Debug)]
+pub enum CommandBuildError {
+    Subcommand(SubcommandError),
+    Argument(ArgumentError),
+}
+
+impl Error for CommandBuildError {}
+
+impl fmt::Display for CommandBuildError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Subcommand(e) => write!(f, "{e}"),
+            Self::Argument(e) => write!(f, "{e}"),
+        }
+    }
+}
+
+impl From<SubcommandError> for CommandBuildError {
+    fn from(e: SubcommandError) -> Self {
+        Self::Subcommand(e)
+    }
+}
+
 impl Builder {
     pub const fn new() -> Self {
         Self { args_raw: None }
@@ -55,19 +79,19 @@ impl Builder {
         self
     }
 
-    pub fn build(self) -> Result<Config, Box<dyn Error>> {
+    pub fn build(self) -> Result<Config, CommandBuildError> {
         let Some(args) = self.args_raw else {
-            return Err(Box::new(SubcommandError::Missing));
+            return Err(CommandBuildError::Subcommand(SubcommandError::Missing));
         };
 
         let subcommand = match args.first() {
             Some(sub) => ConfigSubcommand::from_str(sub)?,
-            None => return Err(Box::new(SubcommandError::Missing)),
+            None => return Err(CommandBuildError::Subcommand(SubcommandError::Missing)),
         };
 
         let mut args_iter = args.iter().skip(1);
         if args_iter.any(String::is_empty) {
-            Err(Box::new(ArgumentError::Missing))
+            Err(CommandBuildError::Argument(ArgumentError::Missing))
         } else {
             Ok(Config {
                 subcommand,

@@ -6,10 +6,10 @@ use super::{config, del, echo, exists, get, ping, set};
 
 // TODO: make this trait required for all commands via a derive macro
 pub trait Execute {
-    fn execute(self: Box<Self>) -> Response;
+    fn execute(self) -> Response;
 }
 
-pub enum Command {
+pub enum CommandBuilder {
     Ping(ping::Builder),
     Echo(echo::Builder),
     Config(config::Builder),
@@ -37,7 +37,7 @@ impl fmt::Display for CommandError {
     }
 }
 
-impl FromStr for Command {
+impl FromStr for CommandBuilder {
     type Err = CommandError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -85,6 +85,33 @@ impl fmt::Display for ArgumentError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Self::Missing => write!(f, "missing argument"),
+        }
+    }
+}
+
+pub enum Command {
+    Ping(ping::Ping),
+    Echo(echo::Echo),
+    Config(config::Config),
+    Exists(exists::Exists),
+    Set(set::Set),
+    Get(get::Get),
+    Del(del::Del),
+    // LPush,
+    // RPush,
+    // Save,
+}
+
+impl Execute for Command {
+    fn execute(self) -> Response {
+        match self {
+            Self::Ping(cmd) => cmd.execute(),
+            Self::Echo(cmd) => cmd.execute(),
+            Self::Get(cmd) => cmd.execute(),
+            Self::Set(cmd) => cmd.execute(),
+            Self::Exists(cmd) => cmd.execute(),
+            Self::Del(cmd) => cmd.execute(),
+            Self::Config(cmd) => cmd.execute(),
         }
     }
 }

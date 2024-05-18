@@ -12,7 +12,7 @@ pub struct Get {
 // Implement the Execute trait for the Get command
 impl Execute for Get {
     // Define the execute method for the Get command
-    fn execute(self: Box<Self>) -> Response {
+    fn execute(self) -> Response {
         // Use the KV_STORE to get the value associated with the key
         // If the key is not found, return a Null response
         // Otherwise, return a response with the value

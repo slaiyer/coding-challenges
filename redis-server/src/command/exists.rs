@@ -12,7 +12,7 @@ pub struct Exists {
 
 impl Execute for Exists {
     /// Executes the `Exists` command and returns a `Response`.
-    fn execute(self: Box<Self>) -> Response {
+    fn execute(self) -> Response {
         Response::ss(&u64::from(KV_STORE.exists(&self.key)).to_string())
     }
 }

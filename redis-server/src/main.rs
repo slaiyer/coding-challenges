@@ -67,10 +67,10 @@ async fn handle_client(mut stream: TcpStream) {
 /// Processes a request and returns the corresponding response.
 fn process(request_buf: &[u8]) -> String {
     Request::try_from(request_buf)
-        .map_err(|e| Response::err_from_error(e).to_string())
+        .map_err(Response::err_from_error)
         .and_then(|request: Request| deserialize::parse_commands(&request))
         .map_or_else(
-            |error| error,
+            |error| error.to_string(),
             |commands| {
                 commands
                     .into_iter()

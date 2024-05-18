@@ -9,7 +9,7 @@ pub struct Echo {
 
 impl Execute for Echo {
     /// Executes the Echo command and returns the response.
-    fn execute(self: Box<Self>) -> Response {
+    fn execute(self) -> Response {
         Response::ss(self.message.as_str())
     }
 }

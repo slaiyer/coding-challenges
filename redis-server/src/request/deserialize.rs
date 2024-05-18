@@ -1,6 +1,6 @@
 /// This module provides functions for deserializing Redis requests.
 use crate::{
-    command::types::{Command, Execute},
+    command::types::{Command, CommandBuilder},
     response::types::Response,
 };
 
@@ -12,93 +12,77 @@ use super::types::Request;
 /// * `request` - The Redis request to parse.
 ///
 /// # Returns
-/// * `Result<Vec<Box<dyn Execute>>, String>` - The parsed commands as a vector of executable commands, or an error message.
-pub fn parse_commands(request: &Request) -> Result<Vec<Box<dyn Execute>>, String> {
-    let mut commands: Vec<Box<dyn Execute>> = Vec::new();
+/// * `Result<Vec<Command>, String>` - The parsed commands as a vector of executable commands, or an error message.
+pub fn parse_commands(request: &Request) -> Result<Vec<Command>, Response> {
+    let mut commands: Vec<Command> = Vec::new();
     for cmd in request.commands() {
         let cmd_type = match cmd.first() {
-            Some(cmd) => match cmd.parse::<Command>() {
+            Some(cmd) => match cmd.parse::<CommandBuilder>() {
                 Ok(result) => result,
-                Err(error) => return Err(error.to_string()),
+                Err(error) => return Err(Response::from(error)),
             },
-            None => return Err(Response::err("", "empty command").to_string()),
+            None => return Err(Response::err("", "empty command")),
         };
 
         commands.push(match cmd_type {
-            Command::Ping(builder) => match cmd.len() {
-                1 => Box::new(builder.build()),
-                2 => Box::new(builder.message(cmd[1].as_str()).build()),
-                _ => {
-                    return Err(
-                        Response::err("", "unexpected number of arguments for PING").to_string()
-                    )
-                }
+            CommandBuilder::Ping(builder) => match cmd.len() {
+                1 => Command::Ping(builder.build()),
+                2 => Command::Ping(builder.message(cmd[1].as_str()).build()),
+                _ => return Err(Response::err("", "unexpected number of arguments for PING")),
             },
-            Command::Echo(builder) => match cmd.len() {
+            CommandBuilder::Echo(builder) => match cmd.len() {
                 2 => match builder.message(cmd[1].as_str()).build() {
-                    Ok(result) => Box::new(result),
-                    Err(error) => return Err(error.to_string()),
+                    Ok(result) => Command::Echo(result),
+                    Err(error) => return Err(Response::from(error)),
                 },
-                _ => {
-                    return Err(
-                        Response::err("", "unexpected number of arguments for ECHO").to_string()
-                    )
-                }
+                _ => return Err(Response::err("", "unexpected number of arguments for ECHO")),
             },
-            Command::Exists(builder) => match cmd.len() {
+            CommandBuilder::Exists(builder) => match cmd.len() {
                 2 => match builder.key(cmd[1].as_str()).build() {
-                    Ok(result) => Box::new(result),
-                    Err(error) => return Err(error.to_string()),
+                    Ok(result) => Command::Exists(result),
+
+                    Err(error) => return Err(Response::from(error)),
                 },
                 _ => {
-                    return Err(
-                        Response::err("", "unexpected number of arguments for EXISTS").to_string(),
-                    )
+                    return Err(Response::err(
+                        "",
+                        "unexpected number of arguments for EXISTS",
+                    ))
                 }
             },
-            Command::Config(builder) => match cmd.len() {
+            CommandBuilder::Config(builder) => match cmd.len() {
                 3 => match builder.args(cmd[1..].to_vec()).build() {
-                    Ok(result) => Box::new(result),
-                    Err(error) => return Err(error.to_string()),
+                    Ok(result) => Command::Config(result),
+                    Err(error) => return Err(Response::from(error)),
                 },
                 _ => {
-                    return Err(
-                        Response::err("", "unexpected number of arguments for CONFIG").to_string(),
-                    )
+                    return Err(Response::err(
+                        "",
+                        "unexpected number of arguments for CONFIG",
+                    ))
                 }
             },
-            Command::Set(builder) => match cmd.len() {
+            CommandBuilder::Set(builder) => match cmd.len() {
                 3 => match builder.key(cmd[1].as_str()).value(cmd[2].as_str()).build() {
-                    Ok(result) => Box::new(result),
-                    Err(error) => return Err(error.to_string()),
+                    Ok(result) => Command::Set(result),
+
+                    Err(error) => return Err(Response::from(error)),
                 },
-                _ => {
-                    return Err(
-                        Response::err("", "unexpected number of arguments for SET").to_string()
-                    )
-                }
+                _ => return Err(Response::err("", "unexpected number of arguments for SET")),
             },
-            Command::Get(builder) => match cmd.len() {
+            CommandBuilder::Get(builder) => match cmd.len() {
                 2 => match builder.key(cmd[1].as_str()).build() {
-                    Ok(result) => Box::new(result),
-                    Err(error) => return Err(error.to_string()),
+                    Ok(result) => Command::Get(result),
+                    Err(error) => return Err(Response::from(error)),
                 },
-                _ => {
-                    return Err(
-                        Response::err("", "unexpected number of arguments for GET").to_string()
-                    )
-                }
+                _ => return Err(Response::err("", "unexpected number of arguments for GET")),
             },
-            Command::Del(builder) => match cmd.len() {
+            CommandBuilder::Del(builder) => match cmd.len() {
                 2 => match builder.key(cmd[1].as_str()).build() {
-                    Ok(result) => Box::new(result),
-                    Err(error) => return Err(error.to_string()),
+                    Ok(result) => Command::Del(result),
+                    Err(error) => return Err(Response::from(error)),
                 },
-                _ => {
-                    return Err(
-                        Response::err("", "unexpected number of arguments for DEL").to_string()
-                    )
-                }
+                _ => return Err(Response::err("", "unexpected number of arguments for DEL")),
             },
         });
     }

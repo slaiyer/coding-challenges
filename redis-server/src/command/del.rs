@@ -11,7 +11,7 @@ pub struct Del {
 
 impl Execute for Del {
     /// Executes the `Del` command by deleting the specified key from the key-value store.
-    fn execute(self: Box<Self>) -> Response {
+    fn execute(self) -> Response {
         KV_STORE.del(&self.key);
         Response::ss("OK")
     }

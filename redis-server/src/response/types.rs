@@ -1,5 +1,10 @@
 use std::{error::Error, fmt};
 
+use crate::command::{
+    config::CommandBuildError,
+    types::{ArgumentError, CommandError},
+};
+
 const TERM: &str = "\r\n";
 
 /// Represents the possible types of responses from a Redis server.
@@ -59,6 +64,24 @@ impl From<Response> for String {
     /// Converts a `Response` object to a string.
     fn from(r: Response) -> Self {
         format!("{r}")
+    }
+}
+
+impl From<CommandError> for Response {
+    fn from(e: CommandError) -> Self {
+        Self::err_from_error(e)
+    }
+}
+
+impl From<ArgumentError> for Response {
+    fn from(e: ArgumentError) -> Self {
+        Self::err_from_error(e)
+    }
+}
+
+impl From<CommandBuildError> for Response {
+    fn from(e: CommandBuildError) -> Self {
+        Self::err_from_error(e)
     }
 }
 

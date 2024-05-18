@@ -11,7 +11,7 @@ pub struct Set {
 impl Execute for Set {
     /// Executes the set command by storing the key-value pair in the key-value store.
     /// Returns a response indicating the success of the operation.
-    fn execute(self: Box<Self>) -> Response {
+    fn execute(self) -> Response {
         crate::kvstore::KV_STORE.set(&self.key, &self.value);
         Response::ss("OK")
     }

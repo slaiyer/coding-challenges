@@ -15,7 +15,7 @@ pub struct Ping {
 
 impl Execute for Ping {
     /// Executes the `Ping` command and returns the response.
-    fn execute(self: Box<Self>) -> Response {
+    fn execute(self) -> Response {
         self.message.as_ref().map_or_else(
             || Response::SimpleString("PONG".into()),
             |s| Response::ss(s),
