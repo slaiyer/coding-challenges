@@ -1,0 +1,7 @@
+{
+  "rust-analyzer.linkedProjects": [
+    "./huffman/Cargo.toml",
+    "./redis-server/Cargo.toml",
+    "./wc/Cargo.toml"
+  ]
+}
