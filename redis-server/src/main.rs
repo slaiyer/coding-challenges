@@ -59,7 +59,9 @@ async fn handle_client(mut stream: TcpStream) {
                 }
             }
             Err(e) => {
-                error!("failed reading from stream: {e:?}");
+                if e.raw_os_error() != Some(54) {
+                    error!("failed reading from stream: {e:?}");
+                }
                 break;
             }
         }
