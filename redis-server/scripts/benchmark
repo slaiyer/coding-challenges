@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -eEuo pipefail
+
+redis-benchmark -t set,get, -n 100000 -q
