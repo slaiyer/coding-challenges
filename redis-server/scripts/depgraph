@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -eEuo pipefail
+
+OUTPUT='/tmp/depgraph.svg'
+cargo depgraph | dot -Tsvg >"${OUTPUT}"
+open "${OUTPUT}" &
+
+cargo modules structure
+
+OUTPUT='/tmp/modules-dependencies.svg'
+cargo modules dependencies | dot -Tsvg >"${OUTPUT}"
+open "${OUTPUT}" &
+
+cargo modules orphans
