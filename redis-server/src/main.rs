@@ -1,11 +1,13 @@
 #![warn(clippy::all, clippy::pedantic, future_incompatible)]
 
-use response::types::Response;
 use std::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
 use tracing::{error, instrument};
+
+mod command;
+use command::types::Command;
 
 mod kvstore;
 use kvstore::KV_STORE;
@@ -13,9 +15,8 @@ use kvstore::KV_STORE;
 mod request;
 use request::types::Request;
 
-mod command;
-use command::types::Command;
 mod response;
+use response::types::Response;
 
 /// The main entry point of the Redis server.
 #[tokio::main]
