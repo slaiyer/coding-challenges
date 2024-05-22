@@ -9,16 +9,16 @@ use tracing::{error, instrument};
 
 mod kvstore;
 use kvstore::KV_STORE;
+
 mod request;
 use request::{deserialize, types::Request};
+
 mod command;
 mod response;
 
 /// The main entry point of the Redis server.
 #[tokio::main]
 async fn main() -> Result<(), io::Error> {
-    tracing_subscriber::fmt::init();
-
     KV_STORE.len(); // initialize singleton
 
     let listener = TcpListener::bind("127.0.0.1:6379").await?;
