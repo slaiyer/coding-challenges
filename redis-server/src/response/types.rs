@@ -4,6 +4,7 @@ use crate::command::{
     config::CommandBuildError,
     types::{ArgumentError, CommandError},
 };
+use crate::request::types::ParseError;
 
 const TERM: &str = "\r\n";
 
@@ -64,6 +65,12 @@ impl From<Response> for String {
     /// Converts a `Response` object to a string.
     fn from(r: Response) -> Self {
         format!("{r}")
+    }
+}
+
+impl From<ParseError> for Response {
+    fn from(e: ParseError) -> Self {
+        Self::err_from_error(e)
     }
 }
 

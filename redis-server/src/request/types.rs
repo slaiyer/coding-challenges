@@ -3,7 +3,7 @@
 /// The `Request` struct represents a Redis request, which consists of a list of commands.
 /// Each command is a list of strings.
 ///
-/// The `ParseError` enum represents the possible errors that can occur during parsing of a Redis request.
+/// The `ParseError` enum represents the possible errors  during parsing of a Redis request.
 /// These errors include invalid request format, invalid bulk length, invalid token length,
 /// empty command, and empty request.
 ///
@@ -230,7 +230,7 @@ mod tests {
         let result = request_str.parse::<Request>().unwrap();
         assert_eq!(
             result,
-            Request::new(vec![vec!["ping".into(), "ling".into(),],],)
+            Request::new(vec![vec!["ping".into(), "ling".into()]])
         );
     }
 

@@ -1,3 +1,6 @@
+use crate::request::deserialize;
+use crate::request::types::Request;
+use deserialize::parse_commands;
 use std::{error::Error, fmt, str::FromStr};
 
 use crate::response::types::Response;
@@ -100,6 +103,14 @@ pub enum Command {
     // LPush,
     // RPush,
     // Save,
+}
+
+impl TryFrom<Request> for Vec<Command> {
+    type Error = Response;
+
+    fn try_from(request: Request) -> Result<Self, Self::Error> {
+        parse_commands(&request)
+    }
 }
 
 impl Execute for Command {

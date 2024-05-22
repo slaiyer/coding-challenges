@@ -12,7 +12,7 @@ use super::types::Request;
 /// * `request` - The Redis request to parse.
 ///
 /// # Returns
-/// * `Result<Vec<Command>, String>` - The parsed commands as a vector of executable commands, or an error message.
+/// * `Result<Vec<Command>, String>` - A vector of executable commands, or an error message.
 pub fn parse_commands(request: &Request) -> Result<Vec<Command>, Response> {
     let mut commands: Vec<Command> = Vec::new();
     for cmd in request.commands() {

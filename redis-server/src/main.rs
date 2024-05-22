@@ -11,9 +11,10 @@ mod kvstore;
 use kvstore::KV_STORE;
 
 mod request;
-use request::{deserialize, types::Request};
+use request::types::Request;
 
 mod command;
+use command::types::Command;
 mod response;
 
 /// The main entry point of the Redis server.
@@ -67,8 +68,8 @@ async fn handle_client(mut stream: TcpStream) {
 /// Processes a request and returns the corresponding response.
 fn process(request_buf: &[u8]) -> String {
     Request::try_from(request_buf)
-        .map_err(Response::err_from_error)
-        .and_then(|request: Request| deserialize::parse_commands(&request))
+        .map_err(Response::from)
+        .and_then(Vec::<Command>::try_from)
         .map_or_else(
             |error| error.to_string(),
             |commands| {
