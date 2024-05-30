@@ -4,7 +4,6 @@ use std::io;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
-use tracing::{error, instrument};
 
 mod command;
 use command::types::Command;
@@ -38,7 +37,6 @@ async fn main() -> Result<(), io::Error> {
 }
 
 /// Handles a client connection by reading requests and sending responses.
-#[instrument]
 async fn handle_client(mut stream: TcpStream) {
     let mut buffer = [0; 1_024];
 
