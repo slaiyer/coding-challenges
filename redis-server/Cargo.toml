@@ -1,9 +1,11 @@
+cargo-features = ["edition2024"]
+
 [package]
 name = "redis-server"
 description = "A Redis server implementation in Rust"
 license = "WTFPL"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 repository = "https://www.github.com/slaiyer/coding-challenges"
 keywords = ["redis", "database", "in-memory", "key-value", "store"]
 categories = [
